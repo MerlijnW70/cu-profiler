@@ -32,6 +32,19 @@ pub struct Config {
     /// Per-scenario configuration, keyed by scenario name.
     #[serde(default)]
     pub scenario: BTreeMap<String, ScenarioConfig>,
+    /// Optional Anchor integration (requires the `anchor` feature to take effect).
+    #[serde(default)]
+    pub anchor: AnchorConfig,
+}
+
+/// `[anchor]` — optional Anchor IDL integration.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields, default)]
+pub struct AnchorConfig {
+    /// Path to an Anchor IDL JSON file. When set (and the `anchor` feature is
+    /// enabled), the program's address is labelled with its IDL name.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub idl: Option<PathBuf>,
 }
 
 /// `[project]`.

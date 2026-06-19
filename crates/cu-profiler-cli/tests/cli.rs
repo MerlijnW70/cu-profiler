@@ -97,3 +97,34 @@ fn json_output_then_inspect_round_trips() {
     let stdout = String::from_utf8_lossy(&inspect.stdout);
     assert!(stdout.contains("swap_exact_in"));
 }
+
+#[cfg(feature = "anchor")]
+#[test]
+fn anchor_idl_labels_program_in_report() {
+    let dir = scratch_dir("anchor");
+    assert!(run(&dir, &["init"]).status.success());
+
+    // IDL whose address matches the program ID in the example swap log.
+    std::fs::write(
+        dir.join("amm.idl.json"),
+        r#"{"address":"SwapPRogram1111111111111111111111111111","metadata":{"name":"amm"},"instructions":[],"errors":[]}"#,
+    )
+    .unwrap();
+
+    // Point the config at the IDL.
+    let cfg = dir.join("cu-profiler.toml");
+    let mut text = std::fs::read_to_string(&cfg).unwrap();
+    text.push_str("\n[anchor]\nidl = \"amm.idl.json\"\n");
+    std::fs::write(&cfg, text).unwrap();
+
+    let out = run(
+        &dir,
+        &["run", "--scenario", "swap_exact_in", "--format", "json"],
+    );
+    assert!(out.status.success());
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    assert!(
+        stdout.contains("\"label\": \"amm\""),
+        "IDL label missing:\n{stdout}"
+    );
+}

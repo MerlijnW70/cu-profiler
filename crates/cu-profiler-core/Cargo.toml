@@ -14,7 +14,9 @@ json = ["dep:serde_json"]
 # Live execution backends. Skeletons in v1: the trait and types exist, but the
 # Solana-dependent implementations are gated so the default build stays pure Rust.
 program-test = []
-anchor = []
+# Anchor IDL support: optional, never a hard dependency in the default build, so
+# native Solana stays first-class. Implies `json` (IDLs are JSON).
+anchor = ["json"]
 
 [dependencies]
 serde = { workspace = true }

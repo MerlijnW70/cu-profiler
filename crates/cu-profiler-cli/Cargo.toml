@@ -12,6 +12,11 @@ description = "Command-line interface for cu-profiler"
 name = "cu-profiler"
 path = "src/main.rs"
 
+[features]
+default = []
+# Enable Anchor IDL integration (program labelling from an IDL).
+anchor = ["cu-profiler-core/anchor"]
+
 [dependencies]
 cu-profiler-core = { workspace = true }
 cu-profiler-report = { workspace = true }

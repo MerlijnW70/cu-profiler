@@ -37,6 +37,8 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
+#[cfg(feature = "anchor")]
+pub mod anchor;
 pub mod backend;
 pub mod baseline;
 pub mod budget;

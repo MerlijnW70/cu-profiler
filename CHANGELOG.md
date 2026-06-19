@@ -7,6 +7,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- Optional **Anchor IDL** support behind the `anchor` feature (off by default,
+  so native Solana stays first-class). Parses both pre-0.30 and 0.30+ IDL
+  layouts to label the program by its IDL name, expose instruction/account
+  names, and decode `custom program error: 0x…` failure logs into Anchor error
+  names. Wired through `[anchor] idl = "…"` in config (CLI built with
+  `--features anchor`).
 - Scope-level CU estimation from optional `cu=<remaining>` compute snapshots in
   markers. When a scope's BEGIN and END both carry a snapshot, the profiler
   reports the (inclusive) delta with `attribution_method = "log-delta"`;
