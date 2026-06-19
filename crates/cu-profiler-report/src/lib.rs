@@ -6,6 +6,7 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
+pub mod html;
 pub mod json;
 pub mod junit;
 pub mod markdown;
@@ -28,11 +29,19 @@ pub enum Format {
     Markdown,
     /// JUnit XML.
     Junit,
+    /// Self-contained HTML.
+    Html,
 }
 
 impl Format {
     /// All formats, for help text and iteration.
-    pub const ALL: [Format; 4] = [Format::Table, Format::Json, Format::Markdown, Format::Junit];
+    pub const ALL: [Format; 5] = [
+        Format::Table,
+        Format::Json,
+        Format::Markdown,
+        Format::Junit,
+        Format::Html,
+    ];
 
     /// Lowercase identifier.
     #[must_use]
@@ -42,6 +51,7 @@ impl Format {
             Format::Json => "json",
             Format::Markdown => "markdown",
             Format::Junit => "junit",
+            Format::Html => "html",
         }
     }
 }
@@ -55,8 +65,9 @@ impl FromStr for Format {
             "json" => Ok(Format::Json),
             "markdown" | "md" => Ok(Format::Markdown),
             "junit" | "xml" => Ok(Format::Junit),
+            "html" | "htm" => Ok(Format::Html),
             other => Err(Error::Config(format!(
-                "unknown output format `{other}` (expected table|json|markdown|junit)"
+                "unknown output format `{other}` (expected table|json|markdown|junit|html)"
             ))),
         }
     }
@@ -72,6 +83,7 @@ pub fn render(report: &Report, format: Format) -> Result<String> {
         Format::Json => json::render(report)?,
         Format::Markdown => markdown::render(report),
         Format::Junit => junit::render(report),
+        Format::Html => html::render(report),
     })
 }
 

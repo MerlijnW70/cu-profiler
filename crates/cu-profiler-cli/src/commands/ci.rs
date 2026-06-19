@@ -27,6 +27,9 @@ pub fn run(args: &RunArgs, quiet: bool) -> Result<ExitCode> {
     if let Some(path) = &out.junit_path {
         write_artifact(path, &cu_profiler_report::render(&report, Format::Junit)?)?;
     }
+    if let Some(path) = &out.html_path {
+        write_artifact(path, &cu_profiler_report::render(&report, Format::Html)?)?;
+    }
 
     // Deterministic table summary to stdout.
     if !quiet {

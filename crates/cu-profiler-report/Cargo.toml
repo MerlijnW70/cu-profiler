@@ -9,11 +9,12 @@ authors.workspace = true
 description = "Report rendering (table, JSON, Markdown, JUnit) for cu-profiler"
 
 [features]
-default = ["table", "json", "markdown", "junit"]
+default = ["table", "json", "markdown", "junit", "html"]
 table = []
 json = []
 markdown = []
 junit = []
+html = []
 
 [dependencies]
 cu-profiler-core = { workspace = true }

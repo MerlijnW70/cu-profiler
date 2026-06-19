@@ -98,6 +98,9 @@ pub struct OutputConfig {
     /// JUnit report path.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub junit_path: Option<PathBuf>,
+    /// HTML report path.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub html_path: Option<PathBuf>,
 }
 
 impl Default for OutputConfig {
@@ -107,6 +110,7 @@ impl Default for OutputConfig {
             json_path: None,
             markdown_path: None,
             junit_path: None,
+            html_path: None,
         }
     }
 }
@@ -148,7 +152,7 @@ impl Config {
     }
 
     fn validate(&self) -> Result<()> {
-        const FORMATS: &[&str] = &["table", "json", "markdown", "junit"];
+        const FORMATS: &[&str] = &["table", "json", "markdown", "junit", "html"];
         if !FORMATS.contains(&self.output.default_format.as_str()) {
             return Err(Error::Config(format!(
                 "output.default_format `{}` is not one of {FORMATS:?}",

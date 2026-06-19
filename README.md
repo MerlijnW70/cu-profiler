@@ -6,7 +6,7 @@
 explains *where* the compute goes (per instruction, per CPI, per marked scope),
 compares runs against a baseline, and fails CI when compute regresses or exceeds
 budget. Think *gas snapshots for Solana*, with scenarios, CPI call trees, scope
-markers, baselines, budget policies, and JSON/Markdown/JUnit output.
+markers, baselines, budget policies, and JSON/Markdown/JUnit/HTML output.
 
 ```
 Solana compute observability
@@ -34,7 +34,7 @@ simulation yet.
 | Crate | Purpose |
 | --- | --- |
 | [`cu-profiler-core`](crates/cu-profiler-core) | Domain model, log parser, CPI tree, scope markers, budget engine, baselines, confidence, diagnostics |
-| [`cu-profiler-report`](crates/cu-profiler-report) | Rendering: table, JSON, Markdown, JUnit |
+| [`cu-profiler-report`](crates/cu-profiler-report) | Rendering: table, JSON, Markdown, JUnit, HTML |
 | [`cu-profiler-cli`](crates/cu-profiler-cli) | `cu-profiler` binary (thin wrapper over the library) |
 | [`cu-profiler-instrumentation`](crates/cu-profiler-instrumentation) | Opt-in scope markers for your program |
 

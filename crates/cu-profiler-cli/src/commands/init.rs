@@ -24,6 +24,7 @@ default_format = "table"
 json_path = "target/cu-profiler/report.json"
 markdown_path = "target/cu-profiler/report.md"
 junit_path = "target/cu-profiler/junit.xml"
+html_path = "target/cu-profiler/report.html"
 
 [program_labels]
 "11111111111111111111111111111111" = "System Program"

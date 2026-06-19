@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **HTML report** output (`--format html`): a self-contained static document
+  (inline CSS, no scripts) with the summary, per-scenario measurement, CPI call
+  tree, scopes and diagnostics. `ci` writes it to `[output] html_path`. All
+  user-supplied text is HTML-escaped.
 - Optional **Anchor IDL** support behind the `anchor` feature (off by default,
   so native Solana stays first-class). Parses both pre-0.30 and 0.30+ IDL
   layouts to label the program by its IDL name, expose instruction/account
