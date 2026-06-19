@@ -18,6 +18,10 @@ const OVER_REQUEST_FRACTION: f64 = 0.5;
 const UNATTRIBUTED_THRESHOLD: f64 = 60.0;
 /// CU above which a *failing* path is considered expensive.
 const EXPENSIVE_FAILURE_CU: u64 = 5_000;
+/// CPI share of total CU above which we surface it (informational).
+const HIGH_CPI_SHARE_THRESHOLD: f64 = 70.0;
+/// Log-line count above which we flag potential event/log bloat.
+const LOG_BLOAT_THRESHOLD: usize = 25;
 
 /// Context handed to every rule.
 pub struct Context<'a> {
@@ -35,6 +39,10 @@ pub struct Context<'a> {
     pub expected: ExpectedResult,
     /// Number of scope markers detected (gates scope-attribution advice).
     pub scope_count: usize,
+    /// Number of program log/data lines emitted (drives log-bloat detection).
+    pub log_line_count: usize,
+    /// Whether a validation scope opened after a CPI (marker-gated).
+    pub late_validation: bool,
 }
 
 type Rule = fn(&Context) -> Option<Diagnostic>;
@@ -47,8 +55,11 @@ pub const RULES: &[Rule] = &[
     expensive_failure_path,
     cpi_explosion,
     high_cpi_depth,
+    high_cpi_share,
     over_requested_compute,
     high_unattributed,
+    event_log_bloat,
+    late_validation,
     stale_baseline,
     low_confidence,
 ];
@@ -159,6 +170,48 @@ fn high_cpi_depth(ctx: &Context) -> Option<Diagnostic> {
             Severity::Warning,
             format!("CPI depth {}", ctx.measurement.cpi_depth),
             "Deep nesting risks the runtime invoke-depth limit; flatten where possible.",
+        )
+    })
+}
+
+fn high_cpi_share(ctx: &Context) -> Option<Diagnostic> {
+    // Share of total CU spent inside CPIs = the complement of the unattributed
+    // (entrypoint-local) share. Only meaningful when CPIs were actually made.
+    let cpi_share = 100.0 - ctx.measurement.unattributed_pct;
+    (ctx.measurement.cpi_count > 0 && cpi_share >= HIGH_CPI_SHARE_THRESHOLD).then(|| {
+        diag(
+            ctx,
+            "high_cpi_share",
+            "Most compute is spent in CPIs",
+            Severity::Info,
+            format!("{cpi_share:.0}% of CU consumed inside CPIs"),
+            "Review the most expensive cross-program call before optimising local code.",
+        )
+    })
+}
+
+fn event_log_bloat(ctx: &Context) -> Option<Diagnostic> {
+    (ctx.log_line_count >= LOG_BLOAT_THRESHOLD).then(|| {
+        diag(
+            ctx,
+            "event_log_bloat",
+            "High log/event volume",
+            Severity::Warning,
+            format!("{} log line(s) emitted", ctx.log_line_count),
+            "Reduce event emission in the hot path; logging itself costs compute.",
+        )
+    })
+}
+
+fn late_validation(ctx: &Context) -> Option<Diagnostic> {
+    ctx.late_validation.then(|| {
+        diag(
+            ctx,
+            "late_validation",
+            "Validation runs after a CPI",
+            Severity::Warning,
+            "a validation scope opened after a cross-program invocation".to_string(),
+            "Move cheap validation before CPIs so rejected transactions fail fast.",
         )
     })
 }

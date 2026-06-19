@@ -61,6 +61,8 @@ mod tests {
             confidence: &confidence,
             expected: ExpectedResult::Success,
             scope_count: 0,
+            log_line_count: 0,
+            late_validation: false,
         };
         let diags = evaluate(&ctx);
         let ids: Vec<&str> = diags.iter().map(|d| d.id.as_str()).collect();
@@ -83,7 +85,35 @@ mod tests {
             confidence: &confidence,
             expected: ExpectedResult::Success,
             scope_count: 0,
+            log_line_count: 0,
+            late_validation: false,
         };
         assert!(evaluate(&ctx).is_empty());
+    }
+
+    #[test]
+    fn flags_cpi_share_log_bloat_and_late_validation() {
+        let measurement = Measurement {
+            total_cu: 50_000,
+            cpi_count: 2,
+            unattributed_pct: 10.0, // ⇒ 90% CPI share
+            ..Measurement::empty()
+        };
+        let confidence = Confidence::high();
+        let ctx = Context {
+            scenario: "swap",
+            measurement: &measurement,
+            policy_results: &[],
+            baseline: None,
+            confidence: &confidence,
+            expected: ExpectedResult::Success,
+            scope_count: 4,
+            log_line_count: 40,
+            late_validation: true,
+        };
+        let ids: Vec<String> = evaluate(&ctx).into_iter().map(|d| d.id).collect();
+        assert!(ids.contains(&"high_cpi_share".to_string()));
+        assert!(ids.contains(&"event_log_bloat".to_string()));
+        assert!(ids.contains(&"late_validation".to_string()));
     }
 }
