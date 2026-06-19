@@ -7,6 +7,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- Scope-level CU estimation from optional `cu=<remaining>` compute snapshots in
+  markers. When a scope's BEGIN and END both carry a snapshot, the profiler
+  reports the (inclusive) delta with `attribution_method = "log-delta"`;
+  otherwise the scope stays unquantified (`"estimated"`). New
+  `markers::{begin,end,point}_line_cu` builders emit the snapshots.
 - Three additional diagnostics completing the spec's detection set:
   `high_cpi_share`, `event_log_bloat`, and `late_validation` (marker-gated,
   evidence-based — fires only when a validation scope opens after a CPI).

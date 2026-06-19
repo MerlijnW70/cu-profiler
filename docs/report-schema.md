@@ -66,6 +66,12 @@ are omitted when empty/absent.
 }
 ```
 
+`units_estimated` / `percentage_of_total` are populated (and
+`attribution_method` is `"log-delta"`) only when the scope's BEGIN and END
+markers both carry a `cu=<remaining>` snapshot. Otherwise the scope is recorded
+for structure with `attribution_method: "estimated"` and no CU figure — the tool
+does not guess. See [instrumentation](instrumentation.md).
+
 ## Stability
 
 The model carries no timestamps or randomness, so JSON output is deterministic —

@@ -122,11 +122,13 @@ pub fn build(events: &[LogEvent], registry: &ProgramRegistry) -> CallNode {
             LogEvent::Success { .. } => close_top(&mut stack, NodeStatus::Success),
             LogEvent::Failed { .. } => close_top(&mut stack, NodeStatus::Failed),
             LogEvent::Log { message } => push_log(&mut stack, message.clone()),
-            LogEvent::ScopeBegin { name } => {
+            LogEvent::ScopeBegin { name, .. } => {
                 push_log(&mut stack, format!("scope-begin: {name}"));
             }
-            LogEvent::ScopeEnd { name } => push_log(&mut stack, format!("scope-end: {name}")),
-            LogEvent::ScopePoint { name } => push_log(&mut stack, format!("scope-point: {name}")),
+            LogEvent::ScopeEnd { name, .. } => push_log(&mut stack, format!("scope-end: {name}")),
+            LogEvent::ScopePoint { name, .. } => {
+                push_log(&mut stack, format!("scope-point: {name}"));
+            }
             LogEvent::Raw(line) => push_log(&mut stack, line.clone()),
         }
     }
