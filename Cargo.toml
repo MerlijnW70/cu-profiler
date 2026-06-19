@@ -18,6 +18,8 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/MerlijnW70/cu-profiler"
 authors = ["cu-profiler contributors"]
 description = "Compute-unit profiling, regression testing and budget enforcement for Solana programs"
+keywords = ["solana", "compute-units", "profiler", "regression", "ci"]
+categories = ["development-tools::profiling", "development-tools::testing"]
 
 [workspace.dependencies]
 cu-profiler-core = { path = "crates/cu-profiler-core", version = "0.1.0" }

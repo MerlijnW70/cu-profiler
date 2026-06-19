@@ -36,6 +36,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Per-instruction CU breakdown (`measurement.per_instruction`), derived from
   top-level program invocations.
 
+### Changed
+- crates.io publish-readiness: each crate has `keywords`, `categories`, and a
+  per-crate `README.md`; the project README gained CI / license / MSRV badges.
+  Verified with `cargo package` (publish order: core → instrumentation →
+  report → cli).
+
 ### Fixed
 - A scope whose `cu=` snapshot delta exceeds the program's measured total (only
   possible with inconsistent logs) now **withholds** `percentage_of_total` and

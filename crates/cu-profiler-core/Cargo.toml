@@ -7,6 +7,9 @@ license.workspace = true
 repository.workspace = true
 authors.workspace = true
 description = "Core domain model, log parser, budget engine and diagnostics for cu-profiler"
+keywords.workspace = true
+categories.workspace = true
+readme = "README.md"
 
 [features]
 default = ["json"]

@@ -1,5 +1,9 @@
 # cu-profiler
 
+[![CI](https://github.com/MerlijnW70/cu-profiler/actions/workflows/ci.yml/badge.svg)](https://github.com/MerlijnW70/cu-profiler/actions/workflows/ci.yml)
+[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
+[![Rust 1.85+](https://img.shields.io/badge/rust-1.85%2B-orange.svg)](https://www.rust-lang.org)
+
 **Compute-unit profiling, regression testing and budget enforcement for Solana programs — 100% Rust.**
 
 `cu-profiler` measures how many compute units (CU) your Solana program uses,

@@ -6,7 +6,10 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
-description = "Report rendering (table, JSON, Markdown, JUnit) for cu-profiler"
+description = "Report rendering (table, JSON, Markdown, JUnit, HTML) for cu-profiler"
+keywords.workspace = true
+categories.workspace = true
+readme = "README.md"
 
 [features]
 default = ["table", "json", "markdown", "junit", "html"]
