@@ -171,7 +171,7 @@ fn collect_scopes(events: &[LogEvent], total_cu: u64) -> (Vec<ScopeResult>, usiz
             _ => {}
         }
     }
-    let warnings = scope_markers::balance_warnings(&markers);
+    let mut warnings = scope_markers::balance_warnings(&markers);
 
     // One ScopeResult per BEGIN, with parent inferred from nesting. When a BEGIN
     // and its matching END both carry a `cu=` snapshot, the scope's CU is the
@@ -201,8 +201,21 @@ fn collect_scopes(events: &[LogEvent], total_cu: u64) -> (Vec<ScopeResult>, usiz
                             let units = begin.saturating_sub(end);
                             scopes[idx].units_estimated = Some(units);
                             scopes[idx].attribution_method = AttributionMethod::LogDelta;
-                            scopes[idx].percentage_of_total =
-                                (total_cu > 0).then(|| (units as f64 / total_cu as f64) * 100.0);
+                            // A snapshot delta larger than the measured program
+                            // total is contradictory (only possible with broken
+                            // logs): withhold the percentage rather than emit a
+                            // nonsensical >100%, and flag the inconsistency.
+                            if total_cu > 0 && units <= total_cu {
+                                scopes[idx].percentage_of_total =
+                                    Some((units as f64 / total_cu as f64) * 100.0);
+                            } else if units > total_cu {
+                                let warning = format!(
+                                    "scope `{}` CU delta ({units}) exceeds the measured total ({total_cu}); percentage withheld",
+                                    scopes[idx].name
+                                );
+                                scopes[idx].warnings.push(warning.clone());
+                                warnings.push(warning);
+                            }
                         }
                     }
                 }
@@ -278,6 +291,27 @@ mod tests {
         assert_eq!(scope.attribution_method, AttributionMethod::LogDelta);
         // 12000 / 24000 total = 50%.
         assert!((scope.percentage_of_total.unwrap() - 50.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn contradictory_snapshot_withholds_percentage_and_warns() {
+        // Snapshot delta (12000) exceeds the program's measured total (5000):
+        // inconsistent logs. The percentage must be withheld, not >100%.
+        let logs = lines(&[
+            "Program User111 invoke [1]",
+            "Program log: CU_PROFILER_BEGIN name=swap::math cu=200000",
+            "Program log: CU_PROFILER_END name=swap::math cu=188000",
+            "Program User111 consumed 5000 of 200000 compute units",
+            "Program User111 success",
+        ]);
+        let a = analyze(&logs, &ProgramRegistry::with_builtins());
+        assert_eq!(a.scopes[0].units_estimated, Some(12_000));
+        assert_eq!(a.scopes[0].percentage_of_total, None);
+        assert!(
+            a.warnings
+                .iter()
+                .any(|w| w.contains("exceeds the measured total"))
+        );
     }
 
     #[test]
