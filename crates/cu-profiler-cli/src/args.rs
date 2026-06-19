@@ -73,7 +73,7 @@ pub struct RunArgs {
     pub common: CommonRun,
 
     /// Output format.
-    #[arg(long, value_parser = ["table", "json", "markdown", "junit"])]
+    #[arg(long, value_parser = ["table", "json", "markdown", "junit", "html"])]
     pub format: Option<String>,
 
     /// Write the rendered report to this path instead of stdout.
@@ -112,7 +112,7 @@ pub struct CompareArgs {
     pub baseline: PathBuf,
 
     /// Output format.
-    #[arg(long, value_parser = ["table", "json", "markdown", "junit"])]
+    #[arg(long, value_parser = ["table", "json", "markdown", "junit", "html"])]
     pub format: Option<String>,
 }
 
@@ -171,7 +171,7 @@ pub struct InspectArgs {
     pub report: PathBuf,
 
     /// Output format.
-    #[arg(long, default_value = "table", value_parser = ["table", "json", "markdown", "junit"])]
+    #[arg(long, default_value = "table", value_parser = ["table", "json", "markdown", "junit", "html"])]
     pub format: String,
 }
 
