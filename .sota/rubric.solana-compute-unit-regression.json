@@ -1,0 +1,16 @@
+{
+  "domain": "solana-compute-unit-regression",
+  "version": 1,
+  "capabilities": [
+    { "id": "real-cu-measurement", "tier": "table-stakes", "test": "measures actual compute units by executing the program out of the box" },
+    { "id": "baseline-delta", "tier": "table-stakes", "test": "tracks CU delta versus a stored baseline" },
+    { "id": "ci-regression-gate", "tier": "table-stakes", "test": "fails CI on a CU regression" },
+    { "id": "markdown-report", "tier": "table-stakes", "test": "emits a human-readable CU report" },
+    { "id": "registry-published", "tier": "table-stakes", "test": "installable from crates.io / npm" },
+    { "id": "real-program-example", "tier": "table-stakes", "test": "ships a runnable example with a real on-chain program" },
+    { "id": "tagged-releases", "tier": "table-stakes", "test": "versioned GitHub releases / tags" },
+    { "id": "per-unit-attribution", "tier": "table-stakes", "test": "per-instruction / per-program CU breakdown" },
+    { "id": "multi-format-ci-output", "tier": "edge", "test": "JSON / JUnit output for CI dashboards" },
+    { "id": "cpi-call-tree-attribution", "tier": "edge", "test": "attributes CU across CPIs and marked scopes" }
+  ]
+}

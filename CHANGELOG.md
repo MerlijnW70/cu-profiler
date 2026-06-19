@@ -7,6 +7,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **Live `mollusk-svm` backend** (`integration/cu-profiler-mollusk`) — runs a
+  compiled **SBF** program through Mollusk and feeds its **real**
+  `compute_units_consumed` into the cu-profiler pipeline (translated into the
+  canonical log line the parser reads). Ships a tiny SBF demo program (built with
+  `cargo build-sbf`) that doubles as a runnable example. Detached crate, verified
+  by a dedicated Linux CI job — the first path that measures genuine CU end to end.
 - **Live `program-test` backend** (`integration/cu-profiler-program-test`): runs a
   scenario in `solana-program-test`'s in-process runtime and captures the real
   transaction `log_messages`, which feed the same parser as recorded logs. Kept

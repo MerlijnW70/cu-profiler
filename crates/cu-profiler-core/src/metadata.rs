@@ -12,6 +12,8 @@ pub enum BackendKind {
     ProgramTest,
     /// `BanksClient` against a test validator.
     BanksClient,
+    /// `mollusk-svm` harness (real compute-unit metering of an SBF program).
+    Mollusk,
     /// RPC `simulateTransaction` (designed, not implemented in v1).
     RpcSimulation,
 }
@@ -24,6 +26,7 @@ impl BackendKind {
             Self::Recorded => "recorded",
             Self::ProgramTest => "program-test",
             Self::BanksClient => "banks-client",
+            Self::Mollusk => "mollusk",
             Self::RpcSimulation => "rpc-simulation",
         }
     }
