@@ -38,6 +38,7 @@ The core abstracts execution behind the `ExecutionBackend` trait:
 | Backend | Status in v1 |
 | --- | --- |
 | `RecordedLogsBackend` | ✅ fully implemented (tests, fixtures, `inspect`) |
+| `MolluskBackend` (live, **real CU**) | ✅ detached `integration/cu-profiler-mollusk` crate — runs an SBF program through `mollusk-svm` and feeds genuine `compute_units_consumed` into the pipeline |
 | `ProgramTestBackend` (live) | ✅ implemented in the detached `integration/cu-profiler-program-test` crate (real `solana-program-test` runtime) |
 | `ProgramTestBackend` / `BanksClientBackend` (core stubs) | interface defined; return `BackendUnimplemented` in the Solana-free default build |
 | `RpcSimulationBackend` | designed for later |

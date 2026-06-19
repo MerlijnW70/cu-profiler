@@ -1,5 +1,5 @@
 {
-  "date": "2026-06-19",
+  "date": "2026-06-20",
   "mode": "standard",
   "domains": ["solana-compute-unit-regression"],
   "rubric_version": 1,
@@ -12,19 +12,20 @@
     { "repo": "cgewecke/hardhat-gas-reporter", "stars": 430, "pushed": "2026-02-09", "type": "popular", "cluster": "cross-cluster-evm" }
   ],
   "matrix": [
-    { "id": "real-cu-measurement", "us": "partial", "tier": "table-stakes" },
+    { "id": "real-cu-measurement", "us": "met", "tier": "table-stakes" },
     { "id": "baseline-delta", "us": "met", "tier": "table-stakes" },
     { "id": "ci-regression-gate", "us": "met", "tier": "table-stakes" },
     { "id": "markdown-report", "us": "met", "tier": "table-stakes" },
     { "id": "registry-published", "us": "missing", "tier": "table-stakes" },
-    { "id": "real-program-example", "us": "partial", "tier": "table-stakes" },
-    { "id": "tagged-releases", "us": "missing", "tier": "table-stakes" },
+    { "id": "real-program-example", "us": "met", "tier": "table-stakes" },
+    { "id": "tagged-releases", "us": "met", "tier": "table-stakes" },
     { "id": "per-unit-attribution", "us": "met", "tier": "table-stakes" },
     { "id": "multi-format-ci-output", "us": "met", "tier": "edge" },
     { "id": "cpi-call-tree-attribution", "us": "met", "tier": "edge" }
   ],
-  "coverage": { "met": 4, "total": 8, "pct": 50 },
-  "tier": "BEHIND",
-  "gaps_total": 4,
-  "note": "Exceeds the field on reporting/attribution breadth (JSON/JUnit/HTML, CPI call tree, scope CU, diagnostics, confidence, budget policies); behind on operational table-stakes (frictionless real CU measurement, registry publish, real-program example, releases)."
+  "coverage": { "met": 7, "total": 8, "pct": 88 },
+  "tier": "COMPETITIVE",
+  "gaps_total": 1,
+  "previous": { "date": "2026-06-19", "coverage_pct": 50, "tier": "BEHIND", "gaps_total": 4 },
+  "note": "Mollusk backend now meters real CU (gap #1 met), ships an SBF example program (gap #4 met), and v0.1.0-alpha is released (gap #3 met). Only crates.io publish (gap #2) remains — needs a crates.io token."
 }

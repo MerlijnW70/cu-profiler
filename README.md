@@ -23,15 +23,21 @@ Solana compute observability
 
 ## Project status
 
-`cu-profiler` is in active development. The current **v1** pipeline profiles
-**recorded Solana logs** and provides the parser, reporting, baseline, budget and
-CI behaviour. Live simulation backends (`solana-program-test`, `BanksClient`) are
-designed but **not yet enabled by default** — don't expect live on-chain
-simulation yet.
+`cu-profiler` is in active development. The default build profiles **recorded
+Solana logs** — deterministic, fast, CI-friendly, and the substrate the whole
+parser/report/baseline/budget pipeline is built and tested on.
 
-> **Why recorded logs first?** Recorded logs make the first release
-> deterministic, fast, CI-friendly and easy to test. The live Solana simulation
-> backends build on the same core pipeline later.
+**Real compute-unit metering** is available today via the **Mollusk backend**
+([`integration/cu-profiler-mollusk`](integration/cu-profiler-mollusk)): it runs a
+compiled **SBF** program through [`mollusk-svm`](https://github.com/anza-xyz/mollusk)
+and feeds genuine `compute_units_consumed` into the same pipeline. A live
+[`solana-program-test`](integration/cu-profiler-program-test) backend also exists.
+Both live in **detached crates** (the Solana stack is heavy and won't build on
+Windows) and are verified on Linux CI — so the core crates stay pure Rust.
+
+> **Why recorded logs in the default build?** They keep the core deterministic,
+> fast, and buildable everywhere; the live Solana backends build on the *same*
+> core pipeline, so a metered run and a replayed run produce the same report.
 
 ## Workspace
 
@@ -41,6 +47,8 @@ simulation yet.
 | [`cu-profiler-report`](crates/cu-profiler-report) | Rendering: table, JSON, Markdown, JUnit, HTML |
 | [`cu-profiler-cli`](crates/cu-profiler-cli) | `cu-profiler` binary (thin wrapper over the library) |
 | [`cu-profiler-instrumentation`](crates/cu-profiler-instrumentation) | Opt-in scope markers for your program |
+| [`integration/cu-profiler-mollusk`](integration/cu-profiler-mollusk) | Live `mollusk-svm` backend — **real CU metering** of an SBF program (Linux) |
+| [`integration/cu-profiler-program-test`](integration/cu-profiler-program-test) | Live `solana-program-test` backend (Linux) |
 
 ## Quickstart
 
@@ -52,8 +60,9 @@ cargo run -p cu-profiler-cli -- baseline save
 cargo run -p cu-profiler-cli -- compare              # fail (exit 1) on regression
 ```
 
-> v1 reads **recorded logs** (`.cu/logs/<scenario>.log`); it does not run a live
-> validator. See [Project status](#project-status).
+> The default CLI reads **recorded logs** (`.cu/logs/<scenario>.log`). For
+> **real metered CU**, drive the same pipeline from the
+> [Mollusk backend](integration/cu-profiler-mollusk). See [Project status](#project-status).
 
 ### Example output
 
