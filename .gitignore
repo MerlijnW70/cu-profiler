@@ -10,3 +10,9 @@
 
 # Local profiling state written by the CLI
 .cu/
+
+# Local-only tooling and agent config — intentionally not shared
+.gate/
+.claude/
+/CLAUDE.md
+/AGENTS.md
