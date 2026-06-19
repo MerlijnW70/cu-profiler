@@ -1,0 +1,7 @@
+# Normalise line endings: store text as LF in the repository.
+* text=auto eol=lf
+
+# Treat fixtures and logs as text so diffs stay readable.
+*.log    text eol=lf
+*.json   text eol=lf
+*.toml   text eol=lf

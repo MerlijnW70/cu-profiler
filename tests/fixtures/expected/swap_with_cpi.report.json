@@ -1,0 +1,122 @@
+{
+  "summary": {
+    "total_scenarios": 1,
+    "passed": 0,
+    "warned": 1,
+    "failed": 0,
+    "total_cu": 96812
+  },
+  "scenarios": [
+    {
+      "name": "swap_with_cpi",
+      "status": "warn",
+      "measurement": {
+        "total_cu": 96812,
+        "consumed": 96812,
+        "requested_limit": 200000,
+        "over_requested": 103188,
+        "cpi_count": 1,
+        "cpi_depth": 1,
+        "unattributed_pct": 95.66169483121926,
+        "per_instruction": [
+          {
+            "index": 0,
+            "program_id": "SwapPRogram1111111111111111111111111111",
+            "consumed": 96812
+          }
+        ],
+        "simulation_success": true
+      },
+      "call_tree": {
+        "program_id": "transaction",
+        "label": "root transaction",
+        "depth": 0,
+        "status": "unknown",
+        "children": [
+          {
+            "program_id": "SwapPRogram1111111111111111111111111111",
+            "depth": 1,
+            "units_consumed": 96812,
+            "status": "success",
+            "logs": [
+              "scope-begin: swap::validate",
+              "scope-end: swap::validate"
+            ],
+            "children": [
+              {
+                "program_id": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+                "label": "SPL Token",
+                "depth": 2,
+                "units_consumed": 4200,
+                "status": "success"
+              }
+            ]
+          }
+        ]
+      },
+      "scopes": [
+        {
+          "name": "swap::validate",
+          "attribution_method": "estimated"
+        }
+      ],
+      "policy_results": [
+        {
+          "policy_id": "absolute_max_cu",
+          "status": "pass",
+          "severity": "info",
+          "actual": 96812.0,
+          "expected": 100000.0,
+          "message": "96812 CU against an absolute maximum of 100000 CU"
+        },
+        {
+          "policy_id": "warn_at_budget_pct",
+          "status": "warn",
+          "severity": "warning",
+          "actual": 96.812,
+          "expected": 90.0,
+          "message": "96.8% of budget used (warns at 90%)",
+          "remediation": "Approaching the budget ceiling; profile the hottest scope."
+        }
+      ],
+      "diagnostics": [
+        {
+          "id": "near_budget_limit",
+          "title": "Scenario is near its compute budget",
+          "severity": "warning",
+          "scenario": "swap_with_cpi",
+          "evidence": "96812 CU consumed",
+          "recommendation": "Leave headroom: a small regression could breach the budget."
+        },
+        {
+          "id": "over_requested_compute",
+          "title": "Compute budget is over-requested",
+          "severity": "info",
+          "scenario": "swap_with_cpi",
+          "evidence": "103188 of 200000 requested CU unused",
+          "recommendation": "Lower the requested compute limit if it is consistently over-requested."
+        },
+        {
+          "id": "high_unattributed",
+          "title": "Large share of compute is unattributed",
+          "severity": "info",
+          "scenario": "swap_with_cpi",
+          "evidence": "96% unattributed CU",
+          "recommendation": "Add scope markers around account validation and math to attribute CU."
+        }
+      ],
+      "confidence": {
+        "level": "medium",
+        "reasons": [
+          "96% unattributed CU",
+          "2 scope markers detected"
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "profiler_version": "0.0.0-golden",
+    "backend": "recorded",
+    "instrumentation": "off"
+  }
+}

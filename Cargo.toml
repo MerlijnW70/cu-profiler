@@ -1,6 +1,33 @@
-[package]
-name = "cu-profiler"
+[workspace]
+resolver = "2"
+members = [
+    "crates/cu-profiler-core",
+    "crates/cu-profiler-report",
+    "crates/cu-profiler-instrumentation",
+    "crates/cu-profiler-cli",
+]
+
+[workspace.package]
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.85"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/MerlijnW70/cu-profiler"
+authors = ["cu-profiler contributors"]
+description = "Compute-unit profiling, regression testing and budget enforcement for Solana programs"
 
-[dependencies]
+[workspace.dependencies]
+cu-profiler-core = { path = "crates/cu-profiler-core", version = "0.1.0" }
+cu-profiler-report = { path = "crates/cu-profiler-report", version = "0.1.0" }
+cu-profiler-instrumentation = { path = "crates/cu-profiler-instrumentation", version = "0.1.0" }
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
+toml = "0.8"
+tracing = "0.1"
+clap = { version = "4", features = ["derive"] }
+anyhow = "1"
+
+[profile.release]
+lto = "thin"

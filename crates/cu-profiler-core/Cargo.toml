@@ -1,0 +1,27 @@
+[package]
+name = "cu-profiler-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Core domain model, log parser, budget engine and diagnostics for cu-profiler"
+
+[features]
+default = ["json"]
+json = ["dep:serde_json"]
+# Live execution backends. Skeletons in v1: the trait and types exist, but the
+# Solana-dependent implementations are gated so the default build stays pure Rust.
+program-test = []
+anchor = []
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true, optional = true }
+thiserror = { workspace = true }
+toml = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

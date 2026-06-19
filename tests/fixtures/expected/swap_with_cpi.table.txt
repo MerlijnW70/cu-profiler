@@ -1,0 +1,4 @@
+Scenario       Actual CU   Budget  Delta  Status
+swap_with_cpi     96,812  100,000      -  WARN
+
+1 scenario(s): 0 passed, 1 warned, 0 failed — 96,812 total CU

@@ -1,0 +1,22 @@
+[package]
+name = "cu-profiler-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Command-line interface for cu-profiler"
+
+[[bin]]
+name = "cu-profiler"
+path = "src/main.rs"
+
+[dependencies]
+cu-profiler-core = { workspace = true }
+cu-profiler-report = { workspace = true }
+clap = { workspace = true }
+anyhow = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = "0.3"
