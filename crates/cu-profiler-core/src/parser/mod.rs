@@ -36,6 +36,11 @@ pub struct ParseAnalysis {
     pub scope_marker_count: usize,
     /// Whether the transaction simulated without a `failed` line.
     pub simulation_success: bool,
+    /// Number of `Program log:` / `Program data:` lines emitted (log volume).
+    pub log_line_count: usize,
+    /// Whether a validation scope began *after* a CPI was issued — a hint that
+    /// cheap checks run too late. Only set when scope markers are present.
+    pub validation_after_cpi: bool,
     /// Parser warnings collected along the way.
     pub warnings: Vec<String>,
     /// Whether the logs parsed cleanly (no warnings).
@@ -70,6 +75,12 @@ pub fn analyze(logs: &[String], registry: &ProgramRegistry) -> ParseAnalysis {
 
     let simulation_success = !events.iter().any(|e| matches!(e, LogEvent::Failed { .. }));
 
+    let log_line_count = events
+        .iter()
+        .filter(|e| matches!(e, LogEvent::Log { .. }))
+        .count();
+    let validation_after_cpi = detect_validation_after_cpi(&events);
+
     let logs_complete = warnings.is_empty();
 
     ParseAnalysis {
@@ -83,9 +94,31 @@ pub fn analyze(logs: &[String], registry: &ProgramRegistry) -> ParseAnalysis {
         scopes,
         scope_marker_count,
         simulation_success,
+        log_line_count,
+        validation_after_cpi,
         warnings,
         logs_complete,
     }
+}
+
+/// True if a scope whose name mentions validation opens after the first CPI
+/// invoke (depth >= 2). Evidence-based and marker-gated: with no scope markers
+/// it can never fire, so it makes no unsupported claim.
+fn detect_validation_after_cpi(events: &[LogEvent]) -> bool {
+    let mut cpi_seen = false;
+    for e in events {
+        match e {
+            LogEvent::Invoke { depth, .. } if *depth >= 2 => cpi_seen = true,
+            LogEvent::ScopeBegin { name } if cpi_seen => {
+                let lower = name.to_ascii_lowercase();
+                if lower.contains("valid") || lower.contains("check") {
+                    return true;
+                }
+            }
+            _ => {}
+        }
+    }
+    false
 }
 
 fn sum_units_at(node: &CallNode, depth: u32) -> u64 {
@@ -202,6 +235,40 @@ mod tests {
         assert_eq!(a.scopes.len(), 2);
         assert_eq!(a.scopes[1].parent.as_deref(), Some("outer"));
         assert!(a.warnings.is_empty());
+    }
+
+    #[test]
+    fn detects_log_volume_and_late_validation() {
+        let logs = lines(&[
+            "Program User111 invoke [1]",
+            "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]",
+            "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success",
+            // Validation marker opens *after* the CPI above.
+            "Program log: CU_PROFILER_BEGIN name=swap::validate_accounts",
+            "Program log: CU_PROFILER_END name=swap::validate_accounts",
+            "Program log: emitting event one",
+            "Program log: emitting event two",
+            "Program User111 consumed 9000 of 200000 compute units",
+            "Program User111 success",
+        ]);
+        let a = analyze(&logs, &ProgramRegistry::with_builtins());
+        assert!(a.validation_after_cpi);
+        assert_eq!(a.log_line_count, 2); // the two non-marker `Program log:` lines
+    }
+
+    #[test]
+    fn validation_before_cpi_is_not_flagged() {
+        let logs = lines(&[
+            "Program User111 invoke [1]",
+            "Program log: CU_PROFILER_BEGIN name=swap::validate_accounts",
+            "Program log: CU_PROFILER_END name=swap::validate_accounts",
+            "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]",
+            "Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success",
+            "Program User111 consumed 9000 of 200000 compute units",
+            "Program User111 success",
+        ]);
+        let a = analyze(&logs, &ProgramRegistry::with_builtins());
+        assert!(!a.validation_after_cpi);
     }
 
     #[test]

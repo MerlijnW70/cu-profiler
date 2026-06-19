@@ -174,6 +174,8 @@ impl Profiler {
             confidence: &confidence,
             expected: scenario.expected,
             scope_count: analysis.scope_marker_count,
+            log_line_count: analysis.log_line_count,
+            late_validation: analysis.validation_after_cpi,
         };
         let diags = diagnostics::evaluate(&ctx);
 
