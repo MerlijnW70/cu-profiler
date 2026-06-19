@@ -45,3 +45,14 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Build (default features)
         run: cargo build --workspace
+
+  program-test:
+    name: program-test backend (Solana, Linux only)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build & test live backend
+        working-directory: integration/cu-profiler-program-test
+        run: cargo test --locked --verbose
