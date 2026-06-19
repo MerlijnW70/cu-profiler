@@ -38,9 +38,14 @@ The core abstracts execution behind the `ExecutionBackend` trait:
 | Backend | Status in v1 |
 | --- | --- |
 | `RecordedLogsBackend` | ✅ fully implemented (tests, fixtures, `inspect`) |
-| `ProgramTestBackend` | interface defined; returns `BackendUnimplemented` |
-| `BanksClientBackend` | interface defined; returns `BackendUnimplemented` |
+| `ProgramTestBackend` (live) | ✅ implemented in the detached `integration/cu-profiler-program-test` crate (real `solana-program-test` runtime) |
+| `ProgramTestBackend` / `BanksClientBackend` (core stubs) | interface defined; return `BackendUnimplemented` in the Solana-free default build |
 | `RpcSimulationBackend` | designed for later |
+
+> The live `program-test` backend lives in a **workspace-detached** crate
+> because the Solana stack is heavy and `openssl-sys` does not build on Windows.
+> The core crates and the local quality gate stay Solana-free; a dedicated Linux
+> CI job builds and tests the live backend.
 
 Keeping the Solana dependency out of the default build keeps the core pure Rust
 and fast to compile, and lets the entire pipeline be developed against recorded

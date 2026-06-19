@@ -7,6 +7,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **Live `program-test` backend** (`integration/cu-profiler-program-test`): runs a
+  scenario in `solana-program-test`'s in-process runtime and captures the real
+  transaction `log_messages`, which feed the same parser as recorded logs. Kept
+  as a workspace-detached crate (the Solana stack is heavy and `openssl-sys` does
+  not build on Windows), built by a dedicated Linux CI job so the core crates and
+  the local gate stay Solana-free. Note: real CU metering requires an SBF (`.so`)
+  program — the runtime does not meter in-process native `processor!` functions;
+  the backend captures whatever logs the runtime emits.
 - **HTML report** output (`--format html`): a self-contained static document
   (inline CSS, no scripts) with the summary, per-scenario measurement, CPI call
   tree, scopes and diagnostics. `ci` writes it to `[output] html_path`. All

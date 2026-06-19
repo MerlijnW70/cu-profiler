@@ -1,0 +1,18 @@
+# Detached from the parent workspace on purpose: this crate pulls the full
+# Solana/Agave stack (heavy, and openssl-sys does not build on Windows), so it
+# must never be compiled by the root `cargo build --workspace` or the local
+# quality gate. CI builds it in a dedicated Linux job.
+[workspace]
+
+[package]
+name = "cu-profiler-program-test"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "Live solana-program-test execution backend for cu-profiler"
+
+[dependencies]
+cu-profiler-core = { path = "../../crates/cu-profiler-core" }
+solana-program-test = "2"
+solana-sdk = "2"
+tokio = { version = "1", features = ["rt", "rt-multi-thread"] }

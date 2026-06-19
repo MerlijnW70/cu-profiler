@@ -6,6 +6,9 @@ members = [
     "crates/cu-profiler-instrumentation",
     "crates/cu-profiler-cli",
 ]
+# Detached: pulls the full Solana stack (heavy; openssl-sys won't build on
+# Windows). Built only by its own dedicated CI job, never by `--workspace`.
+exclude = ["integration/cu-profiler-program-test"]
 
 [workspace.package]
 version = "0.1.0"
