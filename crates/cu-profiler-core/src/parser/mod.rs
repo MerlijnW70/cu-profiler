@@ -70,7 +70,7 @@ pub fn analyze(logs: &[String], registry: &ProgramRegistry) -> ParseAnalysis {
         (unattributed as f64 / total_cu as f64) * 100.0
     };
 
-    let (scopes, scope_marker_count, scope_warnings) = collect_scopes(&events);
+    let (scopes, scope_marker_count, scope_warnings) = collect_scopes(&events, total_cu);
     warnings.extend(scope_warnings);
 
     let simulation_success = !events.iter().any(|e| matches!(e, LogEvent::Failed { .. }));
@@ -109,7 +109,7 @@ fn detect_validation_after_cpi(events: &[LogEvent]) -> bool {
     for e in events {
         match e {
             LogEvent::Invoke { depth, .. } if *depth >= 2 => cpi_seen = true,
-            LogEvent::ScopeBegin { name } if cpi_seen => {
+            LogEvent::ScopeBegin { name, .. } if cpi_seen => {
                 let lower = name.to_ascii_lowercase();
                 if lower.contains("valid") || lower.contains("check") {
                     return true;
@@ -147,40 +147,64 @@ fn sum_units_below(node: &CallNode, min_depth: u32) -> u64 {
         .sum::<u64>()
 }
 
-fn collect_scopes(events: &[LogEvent]) -> (Vec<ScopeResult>, usize, Vec<String>) {
-    use scope_markers::{AttributionMethod, MarkerKind};
+fn collect_scopes(events: &[LogEvent], total_cu: u64) -> (Vec<ScopeResult>, usize, Vec<String>) {
+    use scope_markers::{AttributionMethod, Marker, MarkerKind};
 
-    let mut markers: Vec<(MarkerKind, String)> = Vec::new();
+    let mut markers: Vec<Marker> = Vec::new();
     for e in events {
         match e {
-            LogEvent::ScopeBegin { name } => markers.push((MarkerKind::Begin, name.clone())),
-            LogEvent::ScopeEnd { name } => markers.push((MarkerKind::End, name.clone())),
-            LogEvent::ScopePoint { name } => markers.push((MarkerKind::Point, name.clone())),
+            LogEvent::ScopeBegin { name, cu } => markers.push(Marker {
+                kind: MarkerKind::Begin,
+                name: name.clone(),
+                cu: *cu,
+            }),
+            LogEvent::ScopeEnd { name, cu } => markers.push(Marker {
+                kind: MarkerKind::End,
+                name: name.clone(),
+                cu: *cu,
+            }),
+            LogEvent::ScopePoint { name, cu } => markers.push(Marker {
+                kind: MarkerKind::Point,
+                name: name.clone(),
+                cu: *cu,
+            }),
             _ => {}
         }
     }
     let warnings = scope_markers::balance_warnings(&markers);
 
-    // One ScopeResult per BEGIN, with parent inferred from nesting.
-    let mut stack: Vec<String> = Vec::new();
+    // One ScopeResult per BEGIN, with parent inferred from nesting. When a BEGIN
+    // and its matching END both carry a `cu=` snapshot, the scope's CU is the
+    // (inclusive) delta — a reliable `LogDelta` estimate; otherwise it stays an
+    // unquantified `Estimated` scope (no fake precision).
+    let mut stack: Vec<(usize, Option<u64>)> = Vec::new();
     let mut scopes: Vec<ScopeResult> = Vec::new();
-    for (kind, name) in &markers {
-        match kind {
+    for m in &markers {
+        match m.kind {
             MarkerKind::Begin => {
-                let parent = stack.last().cloned();
+                let parent = stack.last().map(|&(i, _)| scopes[i].name.clone());
+                stack.push((scopes.len(), m.cu));
                 scopes.push(ScopeResult {
-                    name: name.clone(),
+                    name: m.name.clone(),
                     parent,
                     units_estimated: None,
                     percentage_of_total: None,
                     attribution_method: AttributionMethod::Estimated,
                     warnings: Vec::new(),
                 });
-                stack.push(name.clone());
             }
             MarkerKind::End => {
-                if stack.last() == Some(name) {
-                    stack.pop();
+                let matches_top = stack.last().is_some_and(|&(i, _)| scopes[i].name == m.name);
+                if matches_top {
+                    if let Some((idx, begin_cu)) = stack.pop() {
+                        if let (Some(begin), Some(end)) = (begin_cu, m.cu) {
+                            let units = begin.saturating_sub(end);
+                            scopes[idx].units_estimated = Some(units);
+                            scopes[idx].attribution_method = AttributionMethod::LogDelta;
+                            scopes[idx].percentage_of_total =
+                                (total_cu > 0).then(|| (units as f64 / total_cu as f64) * 100.0);
+                        }
+                    }
                 }
             }
             MarkerKind::Point => {}
@@ -235,6 +259,39 @@ mod tests {
         assert_eq!(a.scopes.len(), 2);
         assert_eq!(a.scopes[1].parent.as_deref(), Some("outer"));
         assert!(a.warnings.is_empty());
+    }
+
+    #[test]
+    fn estimates_scope_cu_from_compute_snapshots() {
+        let logs = lines(&[
+            "Program User111 invoke [1]",
+            "Program log: CU_PROFILER_BEGIN name=swap::validate cu=200000",
+            "Program log: CU_PROFILER_END name=swap::validate cu=188000",
+            "Program User111 consumed 24000 of 200000 compute units",
+            "Program User111 success",
+        ]);
+        let a = analyze(&logs, &ProgramRegistry::with_builtins());
+        let scope = &a.scopes[0];
+        assert_eq!(scope.name, "swap::validate");
+        // 200000 remaining at begin − 188000 at end = 12000 CU in the scope.
+        assert_eq!(scope.units_estimated, Some(12_000));
+        assert_eq!(scope.attribution_method, AttributionMethod::LogDelta);
+        // 12000 / 24000 total = 50%.
+        assert!((scope.percentage_of_total.unwrap() - 50.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn scope_without_snapshots_stays_unquantified() {
+        let logs = lines(&[
+            "Program User111 invoke [1]",
+            "Program log: CU_PROFILER_BEGIN name=swap::validate",
+            "Program log: CU_PROFILER_END name=swap::validate",
+            "Program User111 consumed 24000 of 200000 compute units",
+            "Program User111 success",
+        ]);
+        let a = analyze(&logs, &ProgramRegistry::with_builtins());
+        assert_eq!(a.scopes[0].units_estimated, None);
+        assert_eq!(a.scopes[0].attribution_method, AttributionMethod::Estimated);
     }
 
     #[test]

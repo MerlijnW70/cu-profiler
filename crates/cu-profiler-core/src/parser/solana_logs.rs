@@ -47,16 +47,22 @@ pub enum LogEvent {
     ScopeBegin {
         /// Scope name.
         name: String,
+        /// Remaining compute units at the marker, if logged.
+        cu: Option<u64>,
     },
     /// A scope end marker.
     ScopeEnd {
         /// Scope name.
         name: String,
+        /// Remaining compute units at the marker, if logged.
+        cu: Option<u64>,
     },
     /// A point-in-time marker.
     ScopePoint {
         /// Marker name.
         name: String,
+        /// Remaining compute units at the marker, if logged.
+        cu: Option<u64>,
     },
     /// Any line that could not be classified, preserved verbatim.
     Raw(String),
@@ -124,9 +130,20 @@ fn classify(line: &str, index: usize) -> Result<LogEvent, String> {
 /// Handle a `Program log:` payload, detecting profiler markers.
 fn classify_log_message(message: &str) -> LogEvent {
     match scope_markers::parse_marker(message) {
-        Some((MarkerKind::Begin, name)) => LogEvent::ScopeBegin { name },
-        Some((MarkerKind::End, name)) => LogEvent::ScopeEnd { name },
-        Some((MarkerKind::Point, name)) => LogEvent::ScopePoint { name },
+        Some(m) => match m.kind {
+            MarkerKind::Begin => LogEvent::ScopeBegin {
+                name: m.name,
+                cu: m.cu,
+            },
+            MarkerKind::End => LogEvent::ScopeEnd {
+                name: m.name,
+                cu: m.cu,
+            },
+            MarkerKind::Point => LogEvent::ScopePoint {
+                name: m.name,
+                cu: m.cu,
+            },
+        },
         None => LogEvent::Log {
             message: message.to_string(),
         },
@@ -290,22 +307,24 @@ mod tests {
     #[test]
     fn detects_scope_markers_in_log_messages() {
         let lines = vec![
-            "Program log: CU_PROFILER_BEGIN name=swap::validate".to_string(),
+            "Program log: CU_PROFILER_BEGIN name=swap::validate cu=200000".to_string(),
             "Program log: hello".to_string(),
-            "Program log: CU_PROFILER_END name=swap::validate".to_string(),
+            "Program log: CU_PROFILER_END name=swap::validate cu=195000".to_string(),
         ];
         let r = lex(&lines);
         assert_eq!(
             r.events[0].1,
             LogEvent::ScopeBegin {
-                name: "swap::validate".into()
+                name: "swap::validate".into(),
+                cu: Some(200_000),
             }
         );
         assert!(matches!(r.events[1].1, LogEvent::Log { .. }));
         assert_eq!(
             r.events[2].1,
             LogEvent::ScopeEnd {
-                name: "swap::validate".into()
+                name: "swap::validate".into(),
+                cu: Some(195_000),
             }
         );
     }

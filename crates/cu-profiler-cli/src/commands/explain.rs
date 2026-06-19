@@ -65,7 +65,20 @@ fn explain_text(sr: &ScenarioReport) -> String {
         let _ = writeln!(out, "\nScopes:");
         for s in &sr.scopes {
             let parent = s.parent.as_deref().unwrap_or("-");
-            let _ = writeln!(out, "  {} (parent: {parent})", s.name);
+            match (s.units_estimated, s.percentage_of_total) {
+                (Some(units), Some(pct)) => {
+                    let _ = writeln!(
+                        out,
+                        "  {} (parent: {parent}) — {} CU ({pct:.1}%, {})",
+                        s.name,
+                        thousands(units),
+                        format_args!("{:?}", s.attribution_method),
+                    );
+                }
+                _ => {
+                    let _ = writeln!(out, "  {} (parent: {parent}) — CU unknown", s.name);
+                }
+            }
         }
     }
 
