@@ -15,3 +15,8 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+    ignore:
+      # `dtolnay/rust-toolchain` is referenced by intentional pins (@stable and
+      # @1.85.0 for the MSRV job), not a version to track. Bumping it would
+      # defeat the MSRV check.
+      - dependency-name: "dtolnay/rust-toolchain"
