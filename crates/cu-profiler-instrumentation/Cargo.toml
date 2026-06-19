@@ -1,0 +1,15 @@
+[package]
+name = "cu-profiler-instrumentation"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Lightweight, feature-gated scope markers for instrumenting Solana programs"
+
+[features]
+# Off by default: instrumentation must be opt-in because it adds compute
+# overhead, which the profiler reports.
+default = []
+instrumentation = []

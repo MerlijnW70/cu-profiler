@@ -1,1 +1,12 @@
+# Rust build artifacts
 /target
+
+# Editor / OS noise
+*.rs.bk
+*.swp
+.DS_Store
+.idea/
+.vscode/
+
+# Local profiling state written by the CLI
+.cu/

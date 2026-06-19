@@ -1,0 +1,8 @@
+Program SwapPRogram1111111111111111111111111111 invoke [1]
+Program log: CU_PROFILER_BEGIN name=swap::validate
+Program log: CU_PROFILER_END name=swap::validate
+Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 4200 of 195000 compute units
+Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+Program SwapPRogram1111111111111111111111111111 consumed 96812 of 200000 compute units
+Program SwapPRogram1111111111111111111111111111 success
