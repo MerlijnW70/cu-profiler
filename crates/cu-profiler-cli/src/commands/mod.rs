@@ -58,6 +58,30 @@ fn build_registry(config: &Config) -> ProgramRegistry {
     registry
 }
 
+/// Label the program from its Anchor IDL when `[anchor] idl` is configured and
+/// the crate was built with the `anchor` feature. A no-op otherwise.
+#[cfg(feature = "anchor")]
+fn apply_anchor_idl(config: &Config, registry: &mut ProgramRegistry) -> Result<()> {
+    use cu_profiler_core::anchor::AnchorIdl;
+    if let Some(path) = &config.anchor.idl {
+        let text = std::fs::read_to_string(path).map_err(|e| {
+            Error::Config(format!("cannot read Anchor IDL `{}`: {e}", path.display()))
+        })?;
+        AnchorIdl::from_json(&text)?.apply_labels(registry);
+    }
+    Ok(())
+}
+
+#[cfg(not(feature = "anchor"))]
+fn apply_anchor_idl(config: &Config, _registry: &mut ProgramRegistry) -> Result<()> {
+    if config.anchor.idl.is_some() {
+        eprintln!(
+            "note: `[anchor] idl` is set but this build lacks the `anchor` feature; ignoring it"
+        );
+    }
+    Ok(())
+}
+
 /// Filter the configured scenarios by `--scenario` / `--tag`.
 fn select_scenarios(config: &Config, common: &CommonRun) -> Vec<Scenario> {
     config
@@ -104,7 +128,8 @@ fn profile(
             "no scenarios matched (check config, --scenario and --tag)".to_string(),
         ));
     }
-    let registry = build_registry(&loaded.config);
+    let mut registry = build_registry(&loaded.config);
+    apply_anchor_idl(&loaded.config, &mut registry)?;
     let backend = build_backend(&scenarios, &common.logs_dir);
 
     // When a baseline was explicitly requested, a missing file is a real error

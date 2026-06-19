@@ -39,6 +39,10 @@ budget = 80000
 max_regression_pct = 3
 critical = true
 tags = ["admin", "setup"]
+
+# Optional: label the program from its Anchor IDL (build with --features anchor).
+[anchor]
+idl = "target/idl/my_program.json"
 ```
 
 ## Sections
@@ -52,6 +56,8 @@ tags = ["admin", "setup"]
   built-in well-known IDs (System, Compute Budget, SPL Token, Token-2022, ATA,
   Memo). Unknown programs render as `Unknown Program <pubkey>`.
 - **`[scenario.<name>]`** — per-scenario budget, thresholds, criticality and tags.
+- **`[anchor]`** — optional Anchor IDL path; takes effect when the binary is
+  built with `--features anchor` (see [anchor](anchor.md)).
 
 ## Effective policy
 
