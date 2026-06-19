@@ -29,6 +29,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   top-level program invocations.
 
 ### Fixed
+- A scope whose `cu=` snapshot delta exceeds the program's measured total (only
+  possible with inconsistent logs) now **withholds** `percentage_of_total` and
+  emits a warning, instead of reporting a nonsensical >100% share. Found by a new
+  property/fuzz test that hammers the pipeline with thousands of adversarial log
+  streams and asserts no panics and bounded invariants.
 - CPI attribution no longer falls back to "any open frame"; a `consumed` line is
   attributed only on an exact program-ID match, preventing misattribution on
   malformed or out-of-order logs.
