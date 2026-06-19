@@ -1,0 +1,18 @@
+# Detached from the parent workspace: pulls the full Solana/Mollusk stack
+# (heavy; openssl-sys won't build on Windows). Built only by its own Linux CI
+# job, never by the root `cargo build --workspace` or the local gate.
+[workspace]
+
+[package]
+name = "cu-profiler-mollusk"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "mollusk-svm execution backend for cu-profiler — real compute-unit metering of SBF programs"
+
+[dependencies]
+cu-profiler-core = { path = "../../crates/cu-profiler-core" }
+mollusk-svm = "0.13"
+solana-account = "2"
+solana-instruction = "2"
+solana-pubkey = "2"

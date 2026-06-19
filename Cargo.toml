@@ -6,9 +6,13 @@ members = [
     "crates/cu-profiler-instrumentation",
     "crates/cu-profiler-cli",
 ]
-# Detached: pulls the full Solana stack (heavy; openssl-sys won't build on
-# Windows). Built only by its own dedicated CI job, never by `--workspace`.
-exclude = ["integration/cu-profiler-program-test"]
+# Detached: pull the full Solana stack (heavy; openssl-sys won't build on
+# Windows). Built only by their own dedicated CI jobs, never by `--workspace`.
+exclude = [
+    "integration/cu-profiler-program-test",
+    "integration/cu-profiler-mollusk",
+    "integration/cu-profiler-mollusk/program",
+]
 
 [workspace.package]
 version = "0.1.0"

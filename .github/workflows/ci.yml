@@ -56,3 +56,28 @@ jobs:
       - name: Build & test live backend
         working-directory: integration/cu-profiler-program-test
         run: cargo test --locked --verbose
+
+  mollusk:
+    name: mollusk backend (Solana SBF, Linux only)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install Solana SBF toolchain (cargo build-sbf)
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+
+      - name: Build the SBF demo program
+        working-directory: integration/cu-profiler-mollusk/program
+        env:
+          RUSTFLAGS: ""
+        run: cargo build-sbf
+
+      - name: Test the mollusk backend (real CU metering)
+        working-directory: integration/cu-profiler-mollusk
+        env:
+          SBF_OUT_DIR: ${{ github.workspace }}/integration/cu-profiler-mollusk/program/target/deploy
+        run: cargo test --verbose

@@ -1,0 +1,16 @@
+# Tiny SBF program built with `cargo build-sbf` to demo/test the Mollusk backend
+# (also serves as cu-profiler's runnable example program). Detached workspace.
+[workspace]
+
+[package]
+name = "cu-profiler-demo-program"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "Tiny SBF program used to demo and test cu-profiler's mollusk backend"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+solana-program = "2"

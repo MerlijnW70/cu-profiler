@@ -1,0 +1,30 @@
+{
+  "date": "2026-06-19",
+  "mode": "standard",
+  "domains": ["solana-compute-unit-regression"],
+  "rubric_version": 1,
+  "cluster": "solana-compute-unit-measurement-and-regression",
+  "field": [
+    { "repo": "anza-xyz/mollusk", "stars": 295, "pushed": "2026-06-16", "type": "niche-relevant", "cluster": "direct" },
+    { "repo": "LiteSVM/litesvm", "stars": 610, "pushed": "2026-06-19", "type": "popular", "cluster": "direct" },
+    { "repo": "kevinheavey/solana-bankrun", "stars": 166, "pushed": "2025-03-22", "type": "niche-relevant", "cluster": "direct" },
+    { "repo": "foundry-rs/foundry", "stars": 10441, "pushed": "2026-06-19", "type": "canonical", "cluster": "cross-cluster-evm" },
+    { "repo": "cgewecke/hardhat-gas-reporter", "stars": 430, "pushed": "2026-02-09", "type": "popular", "cluster": "cross-cluster-evm" }
+  ],
+  "matrix": [
+    { "id": "real-cu-measurement", "us": "partial", "tier": "table-stakes" },
+    { "id": "baseline-delta", "us": "met", "tier": "table-stakes" },
+    { "id": "ci-regression-gate", "us": "met", "tier": "table-stakes" },
+    { "id": "markdown-report", "us": "met", "tier": "table-stakes" },
+    { "id": "registry-published", "us": "missing", "tier": "table-stakes" },
+    { "id": "real-program-example", "us": "partial", "tier": "table-stakes" },
+    { "id": "tagged-releases", "us": "missing", "tier": "table-stakes" },
+    { "id": "per-unit-attribution", "us": "met", "tier": "table-stakes" },
+    { "id": "multi-format-ci-output", "us": "met", "tier": "edge" },
+    { "id": "cpi-call-tree-attribution", "us": "met", "tier": "edge" }
+  ],
+  "coverage": { "met": 4, "total": 8, "pct": 50 },
+  "tier": "BEHIND",
+  "gaps_total": 4,
+  "note": "Exceeds the field on reporting/attribution breadth (JSON/JUnit/HTML, CPI call tree, scope CU, diagnostics, confidence, budget policies); behind on operational table-stakes (frictionless real CU measurement, registry publish, real-program example, releases)."
+}
