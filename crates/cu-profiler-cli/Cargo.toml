@@ -7,6 +7,9 @@ license.workspace = true
 repository.workspace = true
 authors.workspace = true
 description = "Command-line interface for cu-profiler"
+keywords.workspace = true
+categories.workspace = true
+readme = "README.md"
 
 [[bin]]
 name = "cu-profiler"

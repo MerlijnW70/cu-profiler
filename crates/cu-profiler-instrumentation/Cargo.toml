@@ -7,6 +7,9 @@ license.workspace = true
 repository.workspace = true
 authors.workspace = true
 description = "Lightweight, feature-gated scope markers for instrumenting Solana programs"
+keywords.workspace = true
+categories.workspace = true
+readme = "README.md"
 
 [features]
 # Off by default: instrumentation must be opt-in because it adds compute
