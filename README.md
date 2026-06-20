@@ -139,7 +139,8 @@ so via the confidence score rather than inventing precision.
 [Instrumentation](docs/instrumentation.md) ·
 [Report schema](docs/report-schema.md) ·
 [Config](docs/config.md) ·
-[Anchor](docs/anchor.md)
+[Anchor](docs/anchor.md) ·
+[Roadmap](ROADMAP.md)
 
 ## Development
 
