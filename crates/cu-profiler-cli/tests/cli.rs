@@ -137,6 +137,45 @@ fn real_logs_emit_no_demo_warning() {
     );
 }
 
+#[test]
+fn import_real_tx_json_then_run_measures_it() {
+    let dir = scratch_dir("import");
+    assert!(run(&dir, &["init"]).status.success());
+
+    // A getTransaction-shaped JSON with real-looking logMessages (nested under
+    // result.meta, like an RPC response).
+    let tx = r#"{"result":{"meta":{"logMessages":[
+        "Program Vote111 invoke [1]",
+        "Program Vote111 consumed 4321 of 200000 compute units",
+        "Program Vote111 success"
+    ]}}}"#;
+    std::fs::write(dir.join("tx.json"), tx).unwrap();
+
+    let imp = run(&dir, &["import", "tx.json", "--name", "real_vote"]);
+    assert!(imp.status.success(), "import failed: {imp:?}");
+    assert!(dir.join(".cu/logs/real_vote.log").exists());
+
+    // Point a scenario at the imported log and run it.
+    let cfg = dir.join("cu-profiler.toml");
+    let mut text = std::fs::read_to_string(&cfg).unwrap();
+    text.push_str("\n[scenario.real_vote]\nbudget = 200000\n");
+    std::fs::write(&cfg, text).unwrap();
+
+    let out = run(&dir, &["run", "--scenario", "real_vote"]);
+    assert!(out.status.success());
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    assert!(
+        stdout.contains("4,321"),
+        "expected imported CU in report: {stdout}"
+    );
+    // Imported real logs carry no demo marker → no warning.
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(
+        !stderr.contains("DEMO"),
+        "unexpected demo warning: {stderr}"
+    );
+}
+
 #[cfg(feature = "anchor")]
 #[test]
 fn anchor_idl_labels_program_in_report() {

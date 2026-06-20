@@ -64,6 +64,22 @@ cargo run -p cu-profiler-cli -- compare              # fail (exit 1) on regressi
 > **real metered CU**, drive the same pipeline from the
 > [Mollusk backend](integration/cu-profiler-mollusk). See [Project status](#project-status).
 
+### Profiling a real transaction
+
+`init` scaffolds **demo** logs (a `run` on them prints a warning to stderr).
+To profile a *real* on-chain transaction, import its logs — `getTransaction`
+JSON from the Solana CLI or an RPC carries the `logMessages` cu-profiler reads:
+
+```sh
+solana confirm -v <SIGNATURE> --output json > tx.json   # or any RPC getTransaction response
+cargo run -p cu-profiler-cli -- import tx.json --name my_swap
+# add `[scenario.my_swap]` to cu-profiler.toml, then:
+cargo run -p cu-profiler-cli -- run --scenario my_swap
+```
+
+cu-profiler reconstructs the real CPI call tree and per-program CU from nothing
+but the logs — no live validator or Solana toolchain needed.
+
 ### Example output
 
 ```

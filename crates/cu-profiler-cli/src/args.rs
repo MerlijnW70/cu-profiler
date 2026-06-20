@@ -44,6 +44,8 @@ pub enum Command {
     Explain(ExplainArgs),
     /// Analyse an existing report JSON without re-simulating.
     Inspect(InspectArgs),
+    /// Import a real transaction's logs (from a `getTransaction` JSON) as a scenario log.
+    Import(ImportArgs),
 }
 
 /// Inputs shared by `run`, `ci` and `compare`.
@@ -173,6 +175,22 @@ pub struct InspectArgs {
     /// Output format.
     #[arg(long, default_value = "table", value_parser = ["table", "json", "markdown", "junit", "html"])]
     pub format: String,
+}
+
+/// `cu-profiler import`.
+#[derive(Debug, Args)]
+pub struct ImportArgs {
+    /// A Solana `getTransaction --output json` response (or any JSON that
+    /// contains a `logMessages` array — e.g. an RPC `getTransaction` result).
+    pub file: PathBuf,
+
+    /// Scenario name to write the logs under. Defaults to the file stem.
+    #[arg(long)]
+    pub name: Option<String>,
+
+    /// Directory to write `<name>.log` into.
+    #[arg(long, default_value = ".cu/logs")]
+    pub logs_dir: PathBuf,
 }
 
 /// `cu-profiler init`.

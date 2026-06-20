@@ -42,6 +42,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Per-instruction CU breakdown (`measurement.per_instruction`), derived from
   top-level program invocations.
 
+### Added
+- **`cu-profiler import <tx.json>`** — turns a real transaction's `logMessages`
+  (Solana `getTransaction --output json`, or any JSON containing them, at any
+  nesting) into a scenario log, so a real on-chain transaction can be profiled
+  with `run` — no live RPC or Solana toolchain. Name defaults to the file stem.
+
 ### Changed
 - `init`'s scaffolded example logs now carry a `DEMO_DATA_ONLY` marker, and
   `run`/`ci` print a clear warning to **stderr** when profiling that demo
