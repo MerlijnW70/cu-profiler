@@ -197,6 +197,92 @@ fn import_real_tx_json_then_run_measures_it() {
     );
 }
 
+/// A one-shot local HTTP/1.1 server that returns `body` to the first client.
+/// Used to exercise the real `import --signature` fetch path without a live RPC.
+#[cfg(feature = "remote")]
+fn serve_once_http(body: &'static str) -> (String, std::thread::JoinHandle<()>) {
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
+
+    let listener = TcpListener::bind("127.0.0.1:0").expect("bind local server");
+    let url = format!("http://{}", listener.local_addr().unwrap());
+    let handle = std::thread::spawn(move || {
+        if let Ok((mut stream, _)) = listener.accept() {
+            let mut buf = [0u8; 4096];
+            let _ = stream.read(&mut buf); // drain the request; we don't need it
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                body.len(),
+                body
+            );
+            let _ = stream.write_all(response.as_bytes());
+            let _ = stream.flush();
+        }
+    });
+    (url, handle)
+}
+
+#[cfg(feature = "remote")]
+#[test]
+fn import_signature_fetches_logs_over_http_then_runs() {
+    let dir = scratch_dir("import-rpc");
+    assert!(run(&dir, &["init"]).status.success());
+
+    // A real getTransaction-shaped JSON-RPC response.
+    let response = r#"{"jsonrpc":"2.0","id":1,"result":{"meta":{"logMessages":[
+        "Program Vote111 invoke [1]",
+        "Program Vote111 consumed 7777 of 200000 compute units",
+        "Program Vote111 success"
+    ]}}}"#;
+    let (url, handle) = serve_once_http(response);
+
+    let out = run(
+        &dir,
+        &[
+            "import",
+            "--signature",
+            "TestSig1111111111111111111111111111",
+            "--rpc",
+            &url,
+            "--name",
+            "live_tx",
+        ],
+    );
+    handle.join().unwrap();
+    assert!(out.status.success(), "import --signature failed: {out:?}");
+    assert!(dir.join(".cu/logs/live_tx.log").exists());
+
+    // Profile the fetched real logs.
+    let cfg = dir.join("cu-profiler.toml");
+    let mut text = std::fs::read_to_string(&cfg).unwrap();
+    text.push_str("\n[scenario.live_tx]\nbudget = 200000\n");
+    std::fs::write(&cfg, text).unwrap();
+
+    let report = run(&dir, &["run", "--scenario", "live_tx"]);
+    assert!(report.status.success());
+    let stdout = String::from_utf8_lossy(&report.stdout);
+    assert!(
+        stdout.contains("7,777"),
+        "expected fetched CU in report: {stdout}"
+    );
+}
+
+#[cfg(feature = "remote")]
+#[test]
+fn import_signature_reports_not_found() {
+    let dir = scratch_dir("import-rpc-404");
+    assert!(run(&dir, &["init"]).status.success());
+    let (url, handle) = serve_once_http(r#"{"jsonrpc":"2.0","id":1,"result":null}"#);
+    let out = run(
+        &dir,
+        &["import", "--signature", "Missing111", "--rpc", &url],
+    );
+    handle.join().unwrap();
+    assert!(!out.status.success(), "expected failure for missing tx");
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(stderr.contains("not found"), "stderr: {stderr}");
+}
+
 #[cfg(feature = "anchor")]
 #[test]
 fn anchor_idl_labels_program_in_report() {

@@ -6,6 +6,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- **`cu-profiler import --signature <sig> [--rpc <url>] [--commitment]`** — fetch a
+  transaction's logs **live** from an RPC `getTransaction` over a rustls TLS stack
+  (no OpenSSL, no nasm/cmake; builds on Windows). Behind the `remote` feature
+  (on by default); without it, `--signature` is a clear configuration error.
+  Surfaces RPC errors and not-found cleanly. Verified by unit tests plus a real
+  HTTP round-trip against a local server (no live RPC, no mock product data).
+
 ### Changed
 - Honesty pass on misleading placeholders a user could hit:
   - `[project] mode` now defaults to `recorded` (was `program-test`), is

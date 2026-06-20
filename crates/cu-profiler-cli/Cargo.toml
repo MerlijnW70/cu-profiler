@@ -16,9 +16,12 @@ name = "cu-profiler"
 path = "src/main.rs"
 
 [features]
-default = []
+default = ["remote"]
 # Enable Anchor IDL integration (program labelling from an IDL).
 anchor = ["cu-profiler-core/anchor"]
+# Enable `import --signature` — fetch a transaction's logs from an RPC over a
+# rustls TLS stack (no openssl, no nasm/cmake).
+remote = ["dep:ureq"]
 
 [dependencies]
 cu-profiler-core = { workspace = true }
@@ -28,3 +31,5 @@ anyhow = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = "0.3"
+# Blocking HTTP with rustls + ring by default (openssl-free, Windows-friendly).
+ureq = { version = "3", features = ["json"], optional = true }

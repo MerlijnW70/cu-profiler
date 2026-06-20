@@ -177,14 +177,30 @@ pub struct InspectArgs {
     pub format: String,
 }
 
-/// `cu-profiler import`.
+/// `cu-profiler import`. Exactly one source: a JSON `<file>` or `--signature`.
 #[derive(Debug, Args)]
+#[command(group(
+    clap::ArgGroup::new("source").required(true).args(["file", "signature"])
+))]
 pub struct ImportArgs {
     /// A Solana `getTransaction --output json` response (or any JSON that
-    /// contains a `logMessages` array — e.g. an RPC `getTransaction` result).
-    pub file: PathBuf,
+    /// contains a `logMessages` array).
+    pub file: Option<PathBuf>,
 
-    /// Scenario name to write the logs under. Defaults to the file stem.
+    /// Fetch the transaction's logs live from an RPC by its signature
+    /// (requires the `remote` feature, on by default).
+    #[arg(long)]
+    pub signature: Option<String>,
+
+    /// RPC endpoint used with `--signature`.
+    #[arg(long, default_value = "https://api.mainnet-beta.solana.com")]
+    pub rpc: String,
+
+    /// Commitment used with `--signature`.
+    #[arg(long, default_value = "confirmed", value_parser = ["confirmed", "finalized"])]
+    pub commitment: String,
+
+    /// Scenario name. Defaults to the file stem, or a short form of the signature.
     #[arg(long)]
     pub name: Option<String>,
 

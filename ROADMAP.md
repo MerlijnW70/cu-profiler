@@ -20,7 +20,8 @@ The v1 spec surface, then taken to **FRONTIER** on the SOTA rubric:
 - Reports: table · JSON · Markdown · JUnit · **HTML**
 - Backends: `RecordedLogsBackend` · live **`solana-program-test`** · live **`mollusk-svm` (real CU)**
 - Optional **Anchor IDL** support (feature-gated)
-- **`import`** — profile a real transaction from its `getTransaction` JSON
+- **`import`** — profile a real transaction from its `getTransaction` JSON,
+  **or live by `--signature` from an RPC** (rustls, no OpenSSL; `remote` feature)
 - Demo-data guard · property/fuzz harness · published to crates.io (v0.1.1)
 
 ---
@@ -29,7 +30,6 @@ The v1 spec surface, then taken to **FRONTIER** on the SOTA rubric:
 
 | Item | Why | Effort | Kind |
 | --- | --- | --- | --- |
-| **`import --signature <sig> --rpc <url>`** | Fetch a tx's logs live instead of pasting JSON. Closes the last manual step in the real-data loop. | ~1d | pure-Rust (needs a **rustls** HTTP client — never `native-tls`/openssl) |
 | **Reusable GitHub Action** (`uses: MerlijnW70/cu-profiler-action@v1`) | One-line CI adoption; **no peer in the field has one** — a lead, not catch-up. | ~1d | pure-Rust (Docker/composite action wrapping the CLI) |
 | **PR-comment integration** | Post the Markdown report as a sticky PR comment (spec §35). The report already renders Markdown; this is the delivery. | ~0.5d | pure-Rust |
 | **Multi-sample runs + variance** | The `Scenario.samples` field exists but is unused. Run N times, report min/median/variance, and fold variance into the confidence score (spec §12). | ~1d | pure-Rust |
