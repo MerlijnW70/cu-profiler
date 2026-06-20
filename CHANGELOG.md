@@ -43,6 +43,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   top-level program invocations.
 
 ### Changed
+- `init`'s scaffolded example logs now carry a `DEMO_DATA_ONLY` marker, and
+  `run`/`ci` print a clear warning to **stderr** when profiling that demo
+  fixture data — so its numbers can't be mistaken for a real measurement. The
+  warning goes to stderr only, keeping JSON/JUnit/`--output` machine output clean.
 - crates.io publish-readiness: each crate has `keywords`, `categories`, and a
   per-crate `README.md`; the project README gained CI / license / MSRV badges.
   Verified with `cargo package` (publish order: core → instrumentation →

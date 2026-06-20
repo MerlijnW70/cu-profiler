@@ -98,6 +98,45 @@ fn json_output_then_inspect_round_trips() {
     assert!(stdout.contains("swap_exact_in"));
 }
 
+#[test]
+fn demo_fixtures_warn_on_stderr_not_stdout() {
+    let dir = scratch_dir("demo-warn");
+    assert!(run(&dir, &["init"]).status.success());
+
+    let out = run(&dir, &["run"]);
+    assert!(out.status.success());
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    assert!(
+        stderr.contains("DEMO"),
+        "expected demo warning on stderr: {stderr}"
+    );
+    // The report (stdout) must stay clean — no warning leaking into machine output.
+    assert!(
+        !stdout.contains("DEMO"),
+        "warning leaked into stdout: {stdout}"
+    );
+}
+
+#[test]
+fn real_logs_emit_no_demo_warning() {
+    let dir = scratch_dir("real-nowarn");
+    assert!(run(&dir, &["init"]).status.success());
+    // Replace a scaffolded log with a real (unmarked) one.
+    std::fs::write(
+        dir.join(".cu/logs/swap_exact_in.log"),
+        "Program P invoke [1]\nProgram P consumed 1234 of 200000 compute units\nProgram P success\n",
+    )
+    .unwrap();
+    let out = run(&dir, &["run", "--scenario", "swap_exact_in"]);
+    assert!(out.status.success());
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(
+        !stderr.contains("DEMO"),
+        "unexpected demo warning for real logs: {stderr}"
+    );
+}
+
 #[cfg(feature = "anchor")]
 #[test]
 fn anchor_idl_labels_program_in_report() {

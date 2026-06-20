@@ -43,7 +43,8 @@ critical = true
 tags = ["admin", "setup"]
 "#;
 
-const SWAP_LOG: &str = "Program SwapPRogram1111111111111111111111111111 invoke [1]
+const SWAP_LOG: &str = "# DEMO_DATA_ONLY - scaffolded example, not a real measurement
+Program SwapPRogram1111111111111111111111111111 invoke [1]
 Program log: CU_PROFILER_BEGIN name=swap::validate_accounts
 Program log: CU_PROFILER_END name=swap::validate_accounts
 Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
@@ -53,7 +54,8 @@ Program SwapPRogram1111111111111111111111111111 consumed 96812 of 200000 compute
 Program SwapPRogram1111111111111111111111111111 success
 ";
 
-const INIT_POOL_LOG: &str = "Program PoolPRogram1111111111111111111111111111 invoke [1]
+const INIT_POOL_LOG: &str = "# DEMO_DATA_ONLY - scaffolded example, not a real measurement
+Program PoolPRogram1111111111111111111111111111 invoke [1]
 Program System11111111111111111111111111111111 invoke [2]
 Program System11111111111111111111111111111111 success
 Program PoolPRogram1111111111111111111111111111 consumed 78902 of 200000 compute units

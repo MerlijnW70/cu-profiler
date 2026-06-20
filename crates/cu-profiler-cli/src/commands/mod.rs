@@ -82,6 +82,37 @@ fn apply_anchor_idl(config: &Config, _registry: &mut ProgramRegistry) -> Result<
     Ok(())
 }
 
+/// Marker written into `init`'s scaffolded example logs.
+const DEMO_MARKER: &str = "DEMO_DATA_ONLY";
+
+/// True if any selected scenario's log file is the scaffolded demo fixture (so a
+/// run can warn that its output is not a real measurement).
+fn any_demo_logs(scenarios: &[Scenario], logs_dir: &Path) -> bool {
+    scenarios.iter().any(|s| {
+        let path = logs_dir.join(format!("{}.log", s.name));
+        std::fs::read_to_string(&path)
+            .map(|t| t.contains(DEMO_MARKER))
+            .unwrap_or(false)
+    })
+}
+
+/// Print the demo-data warning to **stderr** (so it never corrupts JSON/JUnit or
+/// `--output` files, which go to stdout). No-op under `--quiet`.
+fn warn_if_demo(scenarios: &[Scenario], logs_dir: &Path, quiet: bool) {
+    if quiet || !any_demo_logs(scenarios, logs_dir) {
+        return;
+    }
+    eprintln!(
+        "\u{26a0} WARNING: profiling scaffolded DEMO fixture data — these numbers are NOT a real measurement."
+    );
+    eprintln!(
+        "  Replace the files in {} with your own program logs, or use the Mollusk backend",
+        logs_dir.display()
+    );
+    eprintln!("  for live SBF compute-unit metering. See the docs.");
+    eprintln!("  ------------------------------------------------------------");
+}
+
 /// Filter the configured scenarios by `--scenario` / `--tag`.
 fn select_scenarios(config: &Config, common: &CommonRun) -> Vec<Scenario> {
     config
