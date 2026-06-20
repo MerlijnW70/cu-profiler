@@ -6,6 +6,23 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Security
+- **Path traversal fixed (high):** scenario/`--name` values are validated before
+  becoming a file path, so `--name ../../x` or a malicious config scenario name
+  can no longer read or write outside the logs directory. Hierarchical names
+  (`swap/happy_path`) are still allowed.
+- **DoS via deep CPI trees fixed:** adversarial logs with tens of thousands of
+  unclosed `invoke` lines built a call tree deep enough to overflow the stack on
+  serialize/traverse. The tree now caps nesting at 64 levels (real Solana CPI
+  depth is ≤ a handful), flattening beyond and emitting a parser warning.
+- **Resource limits added:** log/JSON files are read with a 64 MiB cap, and RPC
+  `getTransaction` responses with a 32 MiB cap, so a hostile file or RPC can't
+  exhaust memory. The demo-marker check now reads only the first line.
+
+  Audit also confirmed clean: TLS validation active via rustls, a 20 s RPC
+  timeout, output escaped for HTML/XML/Markdown, no `unwrap`/`expect` in library
+  code, and `serde_json`'s depth limit already guards JSON parsing.
+
 ### Added
 - **`cu-profiler import --signature <sig> [--rpc <url>] [--commitment]`** — fetch a
   transaction's logs **live** from an RPC `getTransaction` over a rustls TLS stack

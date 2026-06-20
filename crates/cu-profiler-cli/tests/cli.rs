@@ -197,6 +197,40 @@ fn import_real_tx_json_then_run_measures_it() {
     );
 }
 
+#[test]
+fn import_rejects_path_traversal_name() {
+    let dir = scratch_dir("traversal");
+    assert!(run(&dir, &["init"]).status.success());
+    std::fs::write(
+        dir.join("tx.json"),
+        r#"{"result":{"meta":{"logMessages":["Program P invoke [1]","Program P success"]}}}"#,
+    )
+    .unwrap();
+
+    let out = run(&dir, &["import", "tx.json", "--name", "../../ESCAPED"]);
+    assert!(!out.status.success(), "traversal name should be rejected");
+    assert!(String::from_utf8_lossy(&out.stderr).contains("invalid"));
+    // Nothing was written outside the logs dir.
+    assert!(!dir.parent().unwrap().join("ESCAPED.log").exists());
+}
+
+#[test]
+fn run_rejects_path_traversal_scenario_name() {
+    let dir = scratch_dir("traversal-cfg");
+    assert!(run(&dir, &["init"]).status.success());
+    let cfg = dir.join("cu-profiler.toml");
+    let mut text = std::fs::read_to_string(&cfg).unwrap();
+    text.push_str("\n[scenario.\"../../../etc/evil\"]\nbudget = 100000\n");
+    std::fs::write(&cfg, text).unwrap();
+
+    let out = run(&dir, &["run", "--scenario", "../../../etc/evil"]);
+    assert!(
+        !out.status.success(),
+        "traversal scenario name should be rejected"
+    );
+    assert!(String::from_utf8_lossy(&out.stderr).contains("invalid"));
+}
+
 /// A one-shot local HTTP/1.1 server that returns `body` to the first client.
 /// Used to exercise the real `import --signature` fetch path without a live RPC.
 #[cfg(feature = "remote")]

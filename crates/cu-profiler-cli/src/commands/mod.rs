@@ -19,7 +19,47 @@ pub use init::run as init;
 pub use inspect::run as inspect;
 pub use run::run;
 
-use std::path::Path;
+use std::path::{Component, Path};
+
+/// Maximum size of a log file we will read into memory (guards against OOM on a
+/// hostile or runaway log). 64 MiB is far above any real transaction's logs.
+pub(crate) const MAX_LOG_BYTES: u64 = 64 * 1024 * 1024;
+
+/// Reject a scenario/log name that would escape the logs directory. Hierarchical
+/// names (`swap/happy_path`) are allowed; `..`, absolute/root paths, backslashes
+/// and NUL are not — they would turn `logs_dir.join("{name}.log")` into an
+/// arbitrary-path read or write.
+pub(crate) fn validate_log_name(name: &str) -> Result<()> {
+    let safe = !name.is_empty()
+        && !name.contains('\0')
+        && !name.contains('\\')
+        && Path::new(name)
+            .components()
+            .all(|c| matches!(c, Component::Normal(_)));
+    if safe {
+        Ok(())
+    } else {
+        Err(Error::Config(format!(
+            "scenario/log name `{name}` is invalid — it must be a relative name without `..`, \
+             leading `/`, backslashes or NUL"
+        )))
+    }
+}
+
+/// Read a file into a string, refusing anything larger than `max_bytes`.
+pub(crate) fn read_to_string_capped(path: &Path, max_bytes: u64) -> Result<String> {
+    let len = std::fs::metadata(path)
+        .map_err(|e| Error::Config(format!("cannot stat `{}`: {e}", path.display())))?
+        .len();
+    if len > max_bytes {
+        return Err(Error::Config(format!(
+            "`{}` is {len} bytes, over the {max_bytes}-byte limit",
+            path.display()
+        )));
+    }
+    std::fs::read_to_string(path)
+        .map_err(|e| Error::Config(format!("cannot read `{}`: {e}", path.display())))
+}
 
 use cu_profiler_core::baseline::BaselineStore;
 use cu_profiler_core::config::Config;
@@ -90,11 +130,15 @@ const DEMO_MARKER: &str = "DEMO_DATA_ONLY";
 /// True if any selected scenario's log file is the scaffolded demo fixture (so a
 /// run can warn that its output is not a real measurement).
 fn any_demo_logs(scenarios: &[Scenario], logs_dir: &Path) -> bool {
+    use std::io::{BufRead, BufReader};
     scenarios.iter().any(|s| {
         let path = logs_dir.join(format!("{}.log", s.name));
-        std::fs::read_to_string(&path)
-            .map(|t| t.contains(DEMO_MARKER))
-            .unwrap_or(false)
+        // The marker is always the first line — read only that, never the whole
+        // (possibly large) file.
+        std::fs::File::open(&path)
+            .ok()
+            .and_then(|f| BufReader::new(f).lines().next()?.ok())
+            .is_some_and(|line| line.contains(DEMO_MARKER))
     })
 }
 
@@ -153,13 +197,18 @@ fn build_backend(
     use cu_profiler_core::backend::RecordedLogsBackend;
     let mut backend = RecordedLogsBackend::new();
     for s in scenarios {
+        // Names are validated in `profile()` before we get here, so the join
+        // cannot escape `logs_dir`.
         let path = logs_dir.join(format!("{}.log", s.name));
-        if let Ok(text) = std::fs::read_to_string(&path) {
+        if !path.exists() {
+            continue;
+        }
+        match read_to_string_capped(&path, MAX_LOG_BYTES) {
             // Don't guess success from a substring — the parser detects failure
             // from structured `Program <id> failed` lines. We pass `true` and let
-            // `analyze` lower it, so an incidental "failed" in a log message can't
-            // flip a successful run.
-            backend.insert_blob(s.name.clone(), &text, true);
+            // `analyze` lower it.
+            Ok(text) => backend.insert_blob(s.name.clone(), &text, true),
+            Err(e) => eprintln!("warning: skipping `{}`: {e}", path.display()),
         }
     }
     backend
@@ -176,6 +225,10 @@ fn profile(
         return Err(Error::Config(
             "no scenarios matched (check config, --scenario and --tag)".to_string(),
         ));
+    }
+    // Reject path-traversal scenario names before any name becomes a file path.
+    for s in &scenarios {
+        validate_log_name(&s.name)?;
     }
     let mut registry = build_registry(&loaded.config);
     apply_anchor_idl(&loaded.config, &mut registry)?;
@@ -228,4 +281,41 @@ fn emit(rendered: &str, output: Option<&Path>, quiet: bool) -> Result<()> {
         None => print!("{rendered}"),
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn validate_log_name_accepts_safe_and_hierarchical() {
+        for ok in ["swap_exact_in", "swap/happy_path", "tx_4ReKprwf", "a.b-c"] {
+            assert!(validate_log_name(ok).is_ok(), "should accept `{ok}`");
+        }
+    }
+
+    #[test]
+    fn validate_log_name_rejects_traversal_and_absolute() {
+        for bad in [
+            "../x",
+            "../../etc/passwd",
+            "/etc/passwd",
+            r"a\b",
+            "",
+            "a\0b",
+            "..",
+        ] {
+            assert!(validate_log_name(bad).is_err(), "should reject `{bad:?}`");
+        }
+    }
+
+    #[test]
+    fn read_to_string_capped_enforces_limit() {
+        let path = std::env::temp_dir().join(format!("cu-cap-{}.txt", std::process::id()));
+        std::fs::write(&path, b"0123456789").unwrap();
+        assert!(read_to_string_capped(&path, 100).is_ok());
+        let err = read_to_string_capped(&path, 4).unwrap_err();
+        assert!(err.to_string().contains("limit"), "{err}");
+        let _ = std::fs::remove_file(&path);
+    }
 }

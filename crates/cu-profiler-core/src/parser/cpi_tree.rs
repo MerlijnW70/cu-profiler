@@ -95,6 +95,13 @@ impl CallNode {
     }
 }
 
+/// Maximum CPI nesting the tree will represent. Real Solana caps CPI depth at a
+/// handful of levels; this generous bound prevents adversarial logs (tens of
+/// thousands of unclosed `invoke` lines) from building a tree so deep that
+/// serializing or traversing it overflows the stack. Invocations beyond it are
+/// flattened (attached at the cap, not nested deeper).
+pub const MAX_DEPTH: usize = 64;
+
 /// Build a call tree from a lexed event stream.
 #[must_use]
 pub fn build(events: &[LogEvent], registry: &ProgramRegistry) -> CallNode {
@@ -103,7 +110,15 @@ pub fn build(events: &[LogEvent], registry: &ProgramRegistry) -> CallNode {
     for event in events {
         match event {
             LogEvent::Invoke { program_id, depth } => {
-                stack.push(CallNode::new(program_id.clone(), *depth, registry));
+                let node = CallNode::new(program_id.clone(), *depth, registry);
+                // Cap nesting: beyond MAX_DEPTH, attach as a leaf of the deepest
+                // open frame instead of opening a new one. Closes still balance
+                // against the real open frames; the tree depth stays bounded.
+                if stack.len() <= MAX_DEPTH {
+                    stack.push(node);
+                } else if let Some(top) = stack.last_mut() {
+                    top.children.push(node);
+                }
             }
             LogEvent::Consumed {
                 program_id, used, ..
@@ -190,6 +205,27 @@ mod tests {
         assert_eq!(tree.cpi_count(), 1);
         assert_eq!(tree.max_depth(), 2);
         assert_eq!(tree.invocation_count(), 2);
+    }
+
+    #[test]
+    fn deep_invoke_chain_is_capped_not_overflowing() {
+        // Tens of thousands of unclosed invokes would build a tree deep enough
+        // to overflow the stack on serialize/traverse; the cap flattens it.
+        let lines: Vec<String> = (0..50_000)
+            .map(|i| format!("Program P{i} invoke [{}]", i + 1))
+            .collect();
+        let lexed = lex(&lines);
+        let events: Vec<LogEvent> = lexed.events().cloned().collect();
+        let tree = build(&events, &ProgramRegistry::with_builtins());
+        // These recursive traversals must not overflow (bounded by MAX_DEPTH).
+        assert!(tree.invocation_count() >= 50_000);
+        assert!(tree.max_depth() >= 1);
+        // And the structure is genuinely shallow now.
+        fn nesting(n: &CallNode) -> usize {
+            1 + n.children.iter().map(nesting).max().unwrap_or(0)
+        }
+        // root + MAX_DEPTH open frames + one flattened-leaf level.
+        assert!(nesting(&tree) <= MAX_DEPTH + 2);
     }
 
     #[test]

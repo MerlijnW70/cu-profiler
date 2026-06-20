@@ -13,10 +13,16 @@ use cu_profiler_core::error::Error;
 use serde_json::Value;
 
 use crate::args::ImportArgs;
+use crate::commands::{MAX_LOG_BYTES, read_to_string_capped, validate_log_name};
 use crate::exit::ExitCode;
 
 /// The default public RPC (heavily rate-limited — users should pass their own).
 const DEFAULT_RPC: &str = "https://api.mainnet-beta.solana.com";
+
+/// Maximum RPC response body we will read into memory (a `getTransaction`
+/// response is kilobytes; this guards against a hostile RPC returning gigabytes).
+#[cfg(feature = "remote")]
+const MAX_RPC_BYTES: u64 = 32 * 1024 * 1024;
 
 /// Execute the `import` command.
 pub fn run(args: &ImportArgs, quiet: bool) -> Result<ExitCode> {
@@ -48,6 +54,8 @@ pub fn run(args: &ImportArgs, quiet: bool) -> Result<ExitCode> {
     }
 
     let name = args.name.clone().unwrap_or(default_name);
+    // Reject path-traversal names before the name becomes a file path.
+    validate_log_name(&name)?;
     let out = args.logs_dir.join(format!("{name}.log"));
     if let Some(parent) = out.parent() {
         if !parent.as_os_str().is_empty() {
@@ -69,8 +77,7 @@ pub fn run(args: &ImportArgs, quiet: bool) -> Result<ExitCode> {
 
 /// Read logs from a `getTransaction` JSON file.
 fn logs_from_file(file: &std::path::Path) -> Result<Vec<String>> {
-    let text = std::fs::read_to_string(file)
-        .map_err(|e| Error::Config(format!("cannot read `{}`: {e}", file.display())))?;
+    let text = read_to_string_capped(file, MAX_LOG_BYTES)?;
     let value: Value = serde_json::from_str(&text)
         .map_err(|e| Error::Config(format!("`{}` is not valid JSON: {e}", file.display())))?;
     find_log_messages(&value).ok_or_else(|| {
@@ -175,6 +182,8 @@ fn fetch_logs(rpc: &str, signature: &str, commitment: &str) -> Result<Vec<String
         .map_err(|e| Error::Simulation(format!("RPC request to `{rpc}` failed: {e}")))?;
     let value: Value = response
         .body_mut()
+        .with_config()
+        .limit(MAX_RPC_BYTES)
         .read_json::<Value>()
         .map_err(|e| Error::Simulation(format!("invalid RPC response from `{rpc}`: {e}")))?;
 

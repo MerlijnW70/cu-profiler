@@ -55,6 +55,12 @@ pub fn analyze(logs: &[String], registry: &ProgramRegistry) -> ParseAnalysis {
     let mut warnings = lexed.warnings.clone();
 
     let call_tree = cpi_tree::build(&events, registry);
+    if structural_depth(&call_tree) > cpi_tree::MAX_DEPTH {
+        warnings.push(format!(
+            "CPI nesting exceeded {} levels; the call tree was flattened (logs are likely malformed)",
+            cpi_tree::MAX_DEPTH
+        ));
+    }
     let total_cu = sum_units_at(&call_tree, 1);
     let cpi_attributed = sum_units_below(&call_tree, 2);
     let cpi_count = call_tree.cpi_count();
@@ -119,6 +125,17 @@ fn detect_validation_after_cpi(events: &[LogEvent]) -> bool {
         }
     }
     false
+}
+
+/// Structural nesting depth of the tree (bounded by [`cpi_tree::MAX_DEPTH`], so
+/// this recursion is safe). Used only to detect that the cap was hit.
+fn structural_depth(node: &CallNode) -> usize {
+    1 + node
+        .children
+        .iter()
+        .map(structural_depth)
+        .max()
+        .unwrap_or(0)
 }
 
 fn sum_units_at(node: &CallNode, depth: u32) -> u64 {
