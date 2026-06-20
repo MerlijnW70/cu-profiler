@@ -55,7 +55,9 @@ pub struct Scenario {
     /// The budget policy applied to this scenario.
     #[serde(default)]
     pub budget: BudgetPolicy,
-    /// How many samples to take when measuring (>= 1).
+    /// How many samples to take when measuring (>= 1). **Reserved**: the
+    /// recorded backend is deterministic so it ignores this; it will apply to
+    /// live backends that exhibit run-to-run variance (see the roadmap).
     #[serde(default = "default_samples")]
     pub samples: u32,
 }

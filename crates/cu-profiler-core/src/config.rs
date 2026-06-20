@@ -56,14 +56,24 @@ pub struct ProjectConfig {
     /// Program ID under test, if fixed.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub program_id: Option<String>,
-    /// Execution mode (`program-test`, `banks-client`, `recorded`).
+    /// Execution mode. The CLI profiles `recorded` logs; the other modes name a
+    /// live backend that lives in an `integration/*` crate (library-only).
     #[serde(default = "default_mode")]
     pub mode: String,
 }
 
 fn default_mode() -> String {
-    "program-test".to_string()
+    "recorded".to_string()
 }
+
+/// The execution modes the config understands.
+pub const KNOWN_MODES: &[&str] = &[
+    "recorded",
+    "program-test",
+    "banks-client",
+    "mollusk",
+    "rpc-simulation",
+];
 
 /// `[defaults]`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
@@ -151,12 +161,24 @@ impl Config {
         Self::from_toml(&text)
     }
 
+    /// Whether the project mode is `recorded` (what the CLI runs).
+    #[must_use]
+    pub fn mode_is_recorded(&self) -> bool {
+        self.project.mode == "recorded"
+    }
+
     fn validate(&self) -> Result<()> {
         const FORMATS: &[&str] = &["table", "json", "markdown", "junit", "html"];
         if !FORMATS.contains(&self.output.default_format.as_str()) {
             return Err(Error::Config(format!(
                 "output.default_format `{}` is not one of {FORMATS:?}",
                 self.output.default_format
+            )));
+        }
+        if !KNOWN_MODES.contains(&self.project.mode.as_str()) {
+            return Err(Error::Config(format!(
+                "project.mode `{}` is not one of {KNOWN_MODES:?}",
+                self.project.mode
             )));
         }
         Ok(())
@@ -269,6 +291,20 @@ critical = true
         let toml = "[project]\nname = \"x\"\n[output]\ndefault_format = \"yaml\"\n";
         let err = Config::from_toml(toml).unwrap_err();
         assert!(err.to_string().contains("default_format"));
+    }
+
+    #[test]
+    fn rejects_unknown_mode() {
+        let toml = "[project]\nname = \"x\"\nmode = \"bogus\"\n";
+        let err = Config::from_toml(toml).unwrap_err();
+        assert!(err.to_string().contains("project.mode"), "{err}");
+    }
+
+    #[test]
+    fn default_mode_is_recorded() {
+        let cfg = Config::from_toml("[project]\nname = \"x\"\n").unwrap();
+        assert_eq!(cfg.project.mode, "recorded");
+        assert!(cfg.mode_is_recorded());
     }
 
     #[test]

@@ -3,7 +3,9 @@
 use cu_profiler_core::Result;
 
 use crate::args::RunArgs;
-use crate::commands::{emit, load_config, profile, resolve_format, warn_if_demo};
+use crate::commands::{
+    emit, load_config, profile, resolve_format, warn_if_demo, warn_if_live_mode,
+};
 use crate::exit::{DecisionFlags, ExitCode, code_for_report};
 
 /// Execute the `run` command.
@@ -11,6 +13,7 @@ pub fn run(args: &RunArgs, quiet: bool) -> Result<ExitCode> {
     let loaded = load_config(&args.common.config)?;
     let (report, scenarios, _baseline) = profile(&loaded, &args.common, args.baseline.as_deref())?;
 
+    warn_if_live_mode(&loaded.config, quiet);
     warn_if_demo(&scenarios, &args.common.logs_dir, quiet);
 
     let format = resolve_format(&loaded.config, args.format.as_deref())?;

@@ -1,8 +1,10 @@
-//! `BanksClient` backend — interface defined, implementation pending.
+//! `BanksClient` backend — **interface stub** (not yet implemented).
 //!
 //! Wraps a `BanksClient` against a test validator. Like [`super::ProgramTestBackend`]
-//! it is a v1 skeleton: the interface is stable but [`ExecutionBackend::run`]
-//! returns [`crate::Error::BackendUnimplemented`] for now.
+//! it is a stub: [`ExecutionBackend::run`] returns
+//! [`crate::Error::BackendUnimplemented`]. For real compute-unit metering today,
+//! use the `cu-profiler-mollusk` integration crate; this stub documents the
+//! intended shape and is on the [roadmap](https://github.com/MerlijnW70/cu-profiler/blob/main/ROADMAP.md).
 
 use crate::Result;
 use crate::backend::{ExecutionBackend, SimulationOutput};
@@ -32,7 +34,10 @@ impl ExecutionBackend for BanksClientBackend {
 
     fn run(&self, _scenario: &Scenario) -> Result<SimulationOutput> {
         Err(Error::BackendUnimplemented(
-            "banks-client (planned for a future release)".to_string(),
+            "banks-client: this core type is an interface stub and is not yet \
+             implemented — use the `cu-profiler-mollusk` integration crate for \
+             real compute-unit metering today"
+                .to_string(),
         ))
     }
 }

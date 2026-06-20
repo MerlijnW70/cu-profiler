@@ -5,7 +5,7 @@ use cu_profiler_core::Result;
 use cu_profiler_report::Format;
 
 use crate::args::RunArgs;
-use crate::commands::{load_config, profile, warn_if_demo};
+use crate::commands::{load_config, profile, warn_if_demo, warn_if_live_mode};
 use crate::exit::{DecisionFlags, ExitCode, code_for_report};
 
 /// Execute the `ci` command.
@@ -13,6 +13,7 @@ pub fn run(args: &RunArgs, quiet: bool) -> Result<ExitCode> {
     let loaded = load_config(&args.common.config)?;
     let (report, scenarios, _baseline) = profile(&loaded, &args.common, args.baseline.as_deref())?;
 
+    warn_if_live_mode(&loaded.config, quiet);
     warn_if_demo(&scenarios, &args.common.logs_dir, quiet);
 
     // Write every artifact the config asks for; CI consumers pick what they want.

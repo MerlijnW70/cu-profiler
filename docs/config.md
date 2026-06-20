@@ -47,8 +47,11 @@ idl = "target/idl/my_program.json"
 
 ## Sections
 
-- **`[project]`** — identity and execution mode. `mode` is informational in v1
-  (scenarios run from recorded logs); live backends will honour it.
+- **`[project]`** — identity and execution `mode` (default `recorded`). The CLI
+  profiles **recorded logs**; setting `mode` to a live backend
+  (`program-test`/`banks-client`/`mollusk`/`rpc-simulation`) prints a note that
+  those run library-only (the `integration/*` crates), and `run`/`ci` still
+  profile recorded logs. An unknown `mode` is a config error.
 - **`[defaults]`** — the baseline budget policy and CI gating switches. Per-scenario
   settings overlay these.
 - **`[output]`** — default render format and artifact paths used by `ci`.

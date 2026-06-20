@@ -115,6 +115,22 @@ fn warn_if_demo(scenarios: &[Scenario], logs_dir: &Path, quiet: bool) {
     eprintln!("  ------------------------------------------------------------");
 }
 
+/// Warn (stderr) when the config asks for a live `mode` the CLI doesn't execute
+/// (the CLI profiles recorded logs; live backends are library-only).
+fn warn_if_live_mode(config: &Config, quiet: bool) {
+    if quiet || config.mode_is_recorded() {
+        return;
+    }
+    eprintln!(
+        "note: project mode = `{}` is not executed by the CLI, which profiles recorded logs.",
+        config.project.mode
+    );
+    eprintln!(
+        "  For live execution use the integration backends (cu-profiler-mollusk / cu-profiler-program-test),"
+    );
+    eprintln!("  or `cu-profiler import <tx.json>` to profile a real transaction's logs.");
+}
+
 /// Filter the configured scenarios by `--scenario` / `--tag`.
 fn select_scenarios(config: &Config, common: &CommonRun) -> Vec<Scenario> {
     config

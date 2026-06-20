@@ -138,6 +138,27 @@ fn real_logs_emit_no_demo_warning() {
 }
 
 #[test]
+fn live_mode_warns_but_still_runs() {
+    let dir = scratch_dir("livemode");
+    assert!(run(&dir, &["init"]).status.success());
+    let cfg = dir.join("cu-profiler.toml");
+    let text = std::fs::read_to_string(&cfg)
+        .unwrap()
+        .replace("mode = \"recorded\"", "mode = \"program-test\"");
+    std::fs::write(&cfg, text).unwrap();
+
+    let out = run(&dir, &["run"]);
+    assert!(out.status.success());
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(
+        stderr.contains("program-test") && stderr.contains("not executed by the CLI"),
+        "expected live-mode note on stderr: {stderr}"
+    );
+    // The note must not leak into the report (stdout).
+    assert!(!String::from_utf8_lossy(&out.stdout).contains("not executed"));
+}
+
+#[test]
 fn import_real_tx_json_then_run_measures_it() {
     let dir = scratch_dir("import");
     assert!(run(&dir, &["init"]).status.success());

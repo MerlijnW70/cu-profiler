@@ -1,10 +1,11 @@
-//! `solana-program-test` backend — interface defined, implementation pending.
+//! `solana-program-test` backend — **interface stub**.
 //!
-//! The type and its construction surface exist so callers can target it today;
-//! [`ExecutionBackend::run`] returns [`crate::Error::BackendUnimplemented`]
-//! until the `program-test` integration is wired up. Keeping the Solana
-//! dependency out of the default build keeps the core pure Rust and fast to
-//! compile.
+//! This type defines the shape of a program-test backend but does not execute:
+//! [`ExecutionBackend::run`] returns [`crate::Error::BackendUnimplemented`],
+//! because keeping the Solana stack out of the core keeps it pure Rust and
+//! buildable on Windows. The **working** implementation lives in the detached
+//! `cu-profiler-program-test` integration crate; for real compute-unit metering
+//! use `cu-profiler-mollusk`. This stub remains only to document the trait shape.
 
 use std::path::PathBuf;
 
@@ -41,7 +42,10 @@ impl ExecutionBackend for ProgramTestBackend {
 
     fn run(&self, _scenario: &Scenario) -> Result<SimulationOutput> {
         Err(Error::BackendUnimplemented(
-            "program-test (planned for a future release)".to_string(),
+            "program-test: this core type is an interface stub — use the \
+             `cu-profiler-program-test` integration crate for a working backend, \
+             or `cu-profiler-mollusk` for real compute-unit metering"
+                .to_string(),
         ))
     }
 }

@@ -6,6 +6,18 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- Honesty pass on misleading placeholders a user could hit:
+  - `[project] mode` now defaults to `recorded` (was `program-test`), is
+    validated against the known set (unknown = config error), and `run`/`ci`
+    print a stderr note when a live mode is set explaining those backends are
+    library-only — the CLI profiles recorded logs.
+  - The core `ProgramTestBackend` / `BanksClientBackend` stubs now return an
+    actionable error pointing to the `cu-profiler-program-test` /
+    `cu-profiler-mollusk` integration crates, and their docs say so.
+  - `Scenario.samples` is documented as reserved (the deterministic recorded
+    backend ignores it).
+
 ## [0.1.1] - 2026-06-20
 
 ### Added
