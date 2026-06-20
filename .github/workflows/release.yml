@@ -1,0 +1,65 @@
+name: Release binaries
+
+# Build the `cu-profiler` CLI for every supported runner target and attach the
+# archives (+ SHA-256 checksums) to the GitHub Release. These prebuilt binaries
+# are what `cu-profiler-action` downloads, and what `cargo binstall` / manual
+# installs use. Fires on the same `release: published` event as the crates.io
+# publish, so one release ships both.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to build and attach assets to
+        required: true
+        type: string
+
+permissions:
+  contents: write # required to upload assets onto the release
+
+jobs:
+  upload:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+          - target: x86_64-apple-darwin
+            os: macos-13
+          - target: aarch64-apple-darwin
+            os: macos-14
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Install musl tools
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      # Builds `cargo build --release --bin cu-profiler --target <t>` (default
+      # features, incl. `remote`/rustls — no OpenSSL), archives it (.tar.gz on
+      # unix, .zip on windows), emits a .sha256 next to each, and uploads both
+      # to the release for this tag.
+      - uses: taiki-e/upload-rust-binary-action@v1
+        with:
+          bin: cu-profiler
+          target: ${{ matrix.target }}
+          archive: cu-profiler-$tag-$target
+          checksum: sha256
+          include: LICENSE-MIT,LICENSE-APACHE,README.md
+          ref: refs/tags/${{ inputs.tag || github.event.release.tag_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
