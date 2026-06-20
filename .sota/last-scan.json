@@ -16,16 +16,20 @@
     { "id": "baseline-delta", "us": "met", "tier": "table-stakes" },
     { "id": "ci-regression-gate", "us": "met", "tier": "table-stakes" },
     { "id": "markdown-report", "us": "met", "tier": "table-stakes" },
-    { "id": "registry-published", "us": "missing", "tier": "table-stakes" },
+    { "id": "registry-published", "us": "met", "tier": "table-stakes" },
     { "id": "real-program-example", "us": "met", "tier": "table-stakes" },
     { "id": "tagged-releases", "us": "met", "tier": "table-stakes" },
     { "id": "per-unit-attribution", "us": "met", "tier": "table-stakes" },
     { "id": "multi-format-ci-output", "us": "met", "tier": "edge" },
     { "id": "cpi-call-tree-attribution", "us": "met", "tier": "edge" }
   ],
-  "coverage": { "met": 7, "total": 8, "pct": 88 },
-  "tier": "COMPETITIVE",
-  "gaps_total": 1,
-  "previous": { "date": "2026-06-19", "coverage_pct": 50, "tier": "BEHIND", "gaps_total": 4 },
-  "note": "Mollusk backend now meters real CU (gap #1 met), ships an SBF example program (gap #4 met), and v0.1.0-alpha is released (gap #3 met). Only crates.io publish (gap #2) remains — needs a crates.io token."
+  "coverage": { "met": 8, "total": 8, "pct": 100 },
+  "tier": "FRONTIER",
+  "gaps_total": 0,
+  "history": [
+    { "date": "2026-06-19", "coverage_pct": 50, "tier": "BEHIND", "gaps_total": 4 },
+    { "date": "2026-06-20", "coverage_pct": 88, "tier": "COMPETITIVE", "gaps_total": 1 },
+    { "date": "2026-06-20", "coverage_pct": 100, "tier": "FRONTIER", "gaps_total": 0 }
+  ],
+  "note": "All four crates published to crates.io (owner MerlijnW70, v0.1.0) — gap #2 closed. Every table-stakes capability met; exceeds the field on reporting/attribution breadth."
 }

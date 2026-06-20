@@ -55,7 +55,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Build & test live backend
         working-directory: integration/cu-profiler-program-test
-        run: cargo test --locked --verbose
+        run: cargo test --verbose
 
   mollusk:
     name: mollusk backend (Solana SBF, Linux only)
