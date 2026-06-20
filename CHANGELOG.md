@@ -6,6 +6,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-06-20
+
 ### Security
 - **Path traversal fixed (high):** scenario/`--name` values are validated before
   becoming a file path, so `--name ../../x` or a malicious config scenario name
