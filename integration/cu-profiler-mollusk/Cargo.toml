@@ -10,8 +10,13 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "mollusk-svm execution backend for cu-profiler — real compute-unit metering of SBF programs"
 
+[[bin]]
+name = "cu-profiler-bench"
+path = "src/bin/cu-profiler-bench.rs"
+
 [dependencies]
 cu-profiler-core = { path = "../../crates/cu-profiler-core" }
+cu-profiler-report = { path = "../../crates/cu-profiler-report" }
 mollusk-svm = "0.13"
 # Match mollusk-svm 0.13's exact majors: in solana-pubkey 4.x, `Pubkey` is an
 # alias of `solana_address::Address`, which is what mollusk's public API uses.
