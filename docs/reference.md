@@ -594,13 +594,13 @@ Reads an existing report and shows analysis without re-simulating.
 
 ### `cu-profiler bench`
 
-Turnkey real-CU path (scaffolding). Reads a declarative bench plan (`bench.toml`),
-validates it, and resolves or builds the program `.so`. Flags:
+Turnkey real-CU path. Reads a declarative bench plan (`bench.toml`), validates it,
+optionally builds the program, and — with `--program-name` — measures real compute
+units by delegating to the Linux `cu-profiler-bench` executor (see below). Flags:
 
 ```
 --fixtures       bench plan file (default bench.toml)
---program        path to a compiled .so (skips building)
---program-name   .so stem to locate under $SBF_OUT_DIR / target/deploy
+--program-name   .so stem (loaded from $SBF_OUT_DIR); with it, bench measures
 --build          run `cargo build-sbf` first
 --manifest-path  directory to build in (default .)
 ```
@@ -620,9 +620,12 @@ data       = "01ab"               # hex instruction data
   lamports = 1000000
 ```
 
-Live compute-unit execution runs on the Linux-only `cu-profiler-mollusk` backend
-(the Solana/SBF stack is not buildable on every host); this command validates and
-prepares the plan, and the Mollusk execution that produces real CU is wired on top.
+Real measurement is performed by `cu-profiler-bench`, a Linux-only executor built
+from the `cu-profiler-mollusk` crate (it links the Solana/Mollusk stack, which is not
+buildable on every host). `cu-profiler bench --program-name <p>` runs it over `PATH` —
+a runtime sibling, not a build dependency, so the main CLI stays Solana-free. Without
+the executor installed, `bench` validates the plan and fails with the exact command to
+run; without `--program-name`, it validates the plan only.
 
 ---
 

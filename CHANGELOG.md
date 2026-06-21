@@ -7,12 +7,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
-- **`cu-profiler bench` (turnkey real-CU, scaffolding).** A declarative bench-plan
-  schema (`cu_profiler_core::bench::BenchPlan`: instructions, program id, hex data,
-  accounts) with base58/hex validation, and a `bench` subcommand that validates the
-  plan and resolves/builds the program `.so` (`--program` / `--build` via
-  `cargo build-sbf`). Live Mollusk execution that produces real compute units is the
-  Linux-only follow-up (the SBF stack does not build on every host).
+- **`cu-profiler bench` (turnkey real-CU).** A declarative bench-plan schema
+  (`cu_profiler_core::bench::BenchPlan`: instructions, program id, hex data, accounts)
+  with base58/hex validation, and a `bench` subcommand that validates the plan,
+  optionally builds the program (`--build` via `cargo build-sbf`), and — with
+  `--program-name` — measures real compute units by delegating to the Linux
+  `cu-profiler-bench` executor over `PATH`. The executor links the Solana stack and is
+  a runtime sibling, not a build dependency, so the main CLI stays Solana-free; when
+  it is absent, `bench` validates the plan and fails with the exact command to run.
 
 ## [0.1.2] - 2026-06-20
 

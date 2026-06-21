@@ -296,6 +296,35 @@ fn bench_rejects_an_invalid_plan() {
     assert!(String::from_utf8_lossy(&out.stderr).contains("base58"));
 }
 
+#[test]
+fn bench_with_program_name_errors_clearly_without_executor() {
+    let dir = scratch_dir("bench-noexec");
+    let fixtures = dir.join("bench.toml");
+    std::fs::write(
+        &fixtures,
+        "[[instruction]]\nscenario=\"swap\"\nprogram_id=\"11111111111111111111111111111111\"\n",
+    )
+    .unwrap();
+
+    // Asking to measure (--program-name) when the Linux `cu-profiler-bench` executor
+    // is not on PATH must fail clearly with the exact command to run — never silently
+    // pretend to have measured.
+    let out = run(
+        &dir,
+        &[
+            "bench",
+            "--fixtures",
+            fixtures.to_str().unwrap(),
+            "--program-name",
+            "demo",
+        ],
+    );
+    assert!(!out.status.success(), "should fail without the executor");
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(stderr.contains("cu-profiler-bench"), "stderr: {stderr}");
+    assert!(stderr.contains("not found"), "stderr: {stderr}");
+}
+
 #[cfg(feature = "anchor")]
 #[test]
 fn anchor_idl_labels_program_in_report() {

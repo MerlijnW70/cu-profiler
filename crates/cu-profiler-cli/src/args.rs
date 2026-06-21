@@ -221,11 +221,8 @@ pub struct BenchArgs {
     #[arg(long, default_value = "bench.toml")]
     pub fixtures: PathBuf,
 
-    /// Path to the already-compiled program `.so` (skips building).
-    #[arg(long)]
-    pub program: Option<PathBuf>,
-
-    /// Program name (the `.so` stem) to locate under `$SBF_OUT_DIR`/`target/deploy`.
+    /// Program name (the `.so` stem, loaded from `$SBF_OUT_DIR`). With it, `bench`
+    /// measures via the `cu-profiler-bench` executor; without it, validate only.
     #[arg(long)]
     pub program_name: Option<String>,
 
