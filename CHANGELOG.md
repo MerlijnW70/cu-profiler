@@ -13,6 +13,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   plan and resolves/builds the program `.so` (`--program` / `--build` via
   `cargo build-sbf`). Live Mollusk execution that produces real compute units is the
   Linux-only follow-up (the SBF stack does not build on every host).
+- **Mollusk turnkey execution (`MolluskBackend::from_plan`).** The Linux-only
+  `cu-profiler-mollusk` crate can now build an execution backend directly from a
+  validated `BenchPlan` — parsing each fixture's base58 addresses and hex data into
+  Solana `Instruction`/`Account` types and metering real compute units, no
+  hand-written harness. Validated by the SBF CI job.
 
 ## [0.1.2] - 2026-06-20
 
