@@ -231,90 +231,33 @@ fn run_rejects_path_traversal_scenario_name() {
     assert!(String::from_utf8_lossy(&out.stderr).contains("invalid"));
 }
 
-/// A one-shot local HTTP/1.1 server that returns `body` to the first client.
-/// Used to exercise the real `import --signature` fetch path without a live RPC.
-#[cfg(feature = "remote")]
-fn serve_once_http(body: &'static str) -> (String, std::thread::JoinHandle<()>) {
-    use std::io::{Read, Write};
-    use std::net::TcpListener;
+// `import` error path via local-file injection — deterministic, no sockets.
+//
+// This replaces two earlier tests that drove `import --signature` against a hand-rolled
+// one-shot loopback HTTP server. That server was nondeterministic under sandboxed CI
+// (the child process's connection was refused before the moved listener served),
+// turning a transport detail into flaky failures. The `--signature` path shares its
+// parsing with the file path and is unit-tested purely in `commands::import`
+// (`logs_from_response`, `response_null_result_is_not_found`, …), and the happy
+// file -> run -> report pipeline is already covered by
+// `import_real_tx_json_then_run_measures_it`. What remained uncovered — a log-less
+// response surfacing a clear error and a non-zero exit — is pinned here with no network.
 
-    let listener = TcpListener::bind("127.0.0.1:0").expect("bind local server");
-    let url = format!("http://{}", listener.local_addr().unwrap());
-    let handle = std::thread::spawn(move || {
-        if let Ok((mut stream, _)) = listener.accept() {
-            let mut buf = [0u8; 4096];
-            let _ = stream.read(&mut buf); // drain the request; we don't need it
-            let response = format!(
-                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
-                body.len(),
-                body
-            );
-            let _ = stream.write_all(response.as_bytes());
-            let _ = stream.flush();
-        }
-    });
-    (url, handle)
-}
-
-#[cfg(feature = "remote")]
 #[test]
-fn import_signature_fetches_logs_over_http_then_runs() {
-    let dir = scratch_dir("import-rpc");
+fn import_file_without_logs_reports_error() {
+    let dir = scratch_dir("import-file-empty");
     assert!(run(&dir, &["init"]).status.success());
 
-    // A real getTransaction-shaped JSON-RPC response.
-    let response = r#"{"jsonrpc":"2.0","id":1,"result":{"meta":{"logMessages":[
-        "Program Vote111 invoke [1]",
-        "Program Vote111 consumed 7777 of 200000 compute units",
-        "Program Vote111 success"
-    ]}}}"#;
-    let (url, handle) = serve_once_http(response);
+    // A getTransaction response carrying no logs (e.g. a not-found / null result):
+    // the import must surface a clear error and exit non-zero, never write a log.
+    let tx = dir.join("empty.json");
+    std::fs::write(&tx, r#"{"jsonrpc":"2.0","id":1,"result":null}"#).unwrap();
 
-    let out = run(
-        &dir,
-        &[
-            "import",
-            "--signature",
-            "TestSig1111111111111111111111111111",
-            "--rpc",
-            &url,
-            "--name",
-            "live_tx",
-        ],
-    );
-    handle.join().unwrap();
-    assert!(out.status.success(), "import --signature failed: {out:?}");
-    assert!(dir.join(".cu/logs/live_tx.log").exists());
-
-    // Profile the fetched real logs.
-    let cfg = dir.join("cu-profiler.toml");
-    let mut text = std::fs::read_to_string(&cfg).unwrap();
-    text.push_str("\n[scenario.live_tx]\nbudget = 200000\n");
-    std::fs::write(&cfg, text).unwrap();
-
-    let report = run(&dir, &["run", "--scenario", "live_tx"]);
-    assert!(report.status.success());
-    let stdout = String::from_utf8_lossy(&report.stdout);
-    assert!(
-        stdout.contains("7,777"),
-        "expected fetched CU in report: {stdout}"
-    );
-}
-
-#[cfg(feature = "remote")]
-#[test]
-fn import_signature_reports_not_found() {
-    let dir = scratch_dir("import-rpc-404");
-    assert!(run(&dir, &["init"]).status.success());
-    let (url, handle) = serve_once_http(r#"{"jsonrpc":"2.0","id":1,"result":null}"#);
-    let out = run(
-        &dir,
-        &["import", "--signature", "Missing111", "--rpc", &url],
-    );
-    handle.join().unwrap();
-    assert!(!out.status.success(), "expected failure for missing tx");
+    let out = run(&dir, &["import", tx.to_str().unwrap(), "--name", "empty"]);
+    assert!(!out.status.success(), "expected failure for a log-less tx");
     let stderr = String::from_utf8_lossy(&out.stderr);
-    assert!(stderr.contains("not found"), "stderr: {stderr}");
+    assert!(stderr.contains("logMessages"), "stderr: {stderr}");
+    assert!(!dir.join(".cu/logs/empty.log").exists());
 }
 
 #[cfg(feature = "anchor")]
