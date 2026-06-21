@@ -178,7 +178,7 @@ dependencies = [
 
 [[package]]
 name = "cu-profiler-cli"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -192,7 +192,7 @@ dependencies = [
 
 [[package]]
 name = "cu-profiler-core"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -203,11 +203,11 @@ dependencies = [
 
 [[package]]
 name = "cu-profiler-instrumentation"
-version = "0.1.2"
+version = "0.2.0"
 
 [[package]]
 name = "cu-profiler-report"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "cu-profiler-core",
  "serde_json",

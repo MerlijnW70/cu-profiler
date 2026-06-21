@@ -6,6 +6,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-21
+
 ### Added
 - **`cu-profiler comment`** — post the Markdown report as a *sticky* pull-request
   comment: one comment per PR, created once and updated in place on every run
