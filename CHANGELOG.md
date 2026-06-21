@@ -28,6 +28,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `cu-profiler-bench` executor over `PATH`. The executor links the Solana stack and is
   a runtime sibling, not a build dependency, so the main CLI stays Solana-free; when
   it is absent, `bench` validates the plan and fails with the exact command to run.
+- **Mollusk turnkey execution + `cu-profiler-bench` binary (Linux-only).** The
+  detached `cu-profiler-mollusk` crate gains `MolluskBackend::from_plan` (parses a
+  `BenchPlan`'s base58/hex fixtures into Solana `Instruction`/`Account` types and
+  meters real compute units) and `run_plan` (plan → metered `Report`), exposed as a
+  thin `cu-profiler-bench` binary that the main CLI's `bench` delegates to. Validated
+  by the SBF CI job. This is the executor that produces the real CU end to end.
 
 ## [0.1.2] - 2026-06-20
 
