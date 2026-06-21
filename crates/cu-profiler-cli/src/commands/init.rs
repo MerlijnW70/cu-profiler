@@ -86,6 +86,26 @@ pub fn swap_exact_in() -> Scenario {
 }
 "#;
 
+const BENCH_TOML: &str = r#"# bench.toml — the turnkey real-CU path (`cu-profiler bench`).
+#
+# Declare the instruction(s) to run against your compiled SBF program so that
+#   cu-profiler bench --program-name <your_program>
+# meters their REAL compute units (via the Linux `cu-profiler-bench` executor).
+# Replace the placeholder program_id with your program's address, and add the
+# accounts and instruction data your program needs.
+
+[[instruction]]
+scenario   = "swap_exact_in"
+program_id = "11111111111111111111111111111111"  # <-- replace with your program id
+data       = ""                                    # hex instruction data ("" = no args)
+
+#   [[instruction.account]]
+#   pubkey   = "11111111111111111111111111111111"
+#   signer   = true
+#   writable = true
+#   lamports = 1000000
+"#;
+
 const WORKFLOW: &str = r#"name: CU Profiler
 
 on:
@@ -148,6 +168,7 @@ pub fn run(args: &InitArgs, quiet: bool) -> Result<ExitCode> {
         args.force,
         quiet,
     )?;
+    write_file(&dir.join("bench.toml"), BENCH_TOML, args.force, quiet)?;
     if args.workflow {
         write_file(
             &dir.join(".github/workflows/cu-profiler.yml"),
