@@ -7,6 +7,19 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **`cu-profiler comment`** — post the Markdown report as a *sticky* pull-request
+  comment: one comment per PR, created once and updated in place on every run
+  (identified by a hidden `<!-- cu-profiler-report -->` marker). Reuses the existing
+  `remote`/`ureq` stack (rustls, openssl-free); auth via `$GITHUB_TOKEN`. Supports
+  `--input report.md`, `--pr`, `--repo`, `--marker`, and `--dry-run` (no network).
+  `init --workflow` now scaffolds a render-and-comment step with
+  `permissions: pull-requests: write`.
+- **Multi-sample runs + variance.** `Scenario.samples` (and a `--samples` override)
+  now run a scenario N times on non-deterministic backends and record a `SampleStats`
+  distribution (count/min/median/max/variance/std-dev/CV) in the measurement. Variance
+  folds into the confidence score (CV ≥2% → Medium, ≥10% → Low), implementing the
+  spec §12 "sample variance" factor. The deterministic recorded backend ignores
+  `samples` and never fabricates a spread (`ExecutionBackend::is_deterministic`).
 - **`cu-profiler bench` (turnkey real-CU).** A declarative bench-plan schema
   (`cu_profiler_core::bench::BenchPlan`: instructions, program id, hex data, accounts)
   with base58/hex validation, and a `bench` subcommand that validates the plan,

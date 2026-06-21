@@ -4,6 +4,7 @@
 mod baseline;
 mod bench;
 mod ci;
+mod comment;
 mod compare;
 mod explain;
 mod import;
@@ -14,6 +15,7 @@ mod run;
 pub use baseline::{approve as baseline_approve, save as baseline_save};
 pub use bench::run as bench;
 pub use ci::run as ci;
+pub use comment::run as comment;
 pub use compare::run as compare;
 pub use explain::run as explain;
 pub use import::run as import;
@@ -177,13 +179,20 @@ fn warn_if_live_mode(config: &Config, quiet: bool) {
     eprintln!("  or `cu-profiler import <tx.json>` to profile a real transaction's logs.");
 }
 
-/// Filter the configured scenarios by `--scenario` / `--tag`.
+/// Filter the configured scenarios by `--scenario` / `--tag`, applying the
+/// `--samples` override when given.
 fn select_scenarios(config: &Config, common: &CommonRun) -> Vec<Scenario> {
     config
         .scenarios()
         .into_iter()
         .filter(|s| common.scenarios.is_empty() || common.scenarios.contains(&s.name))
         .filter(|s| common.tags.is_empty() || common.tags.iter().any(|t| s.has_tag(t)))
+        .map(|mut s| {
+            if let Some(n) = common.samples {
+                s.samples = n.max(1);
+            }
+            s
+        })
         .collect()
 }
 

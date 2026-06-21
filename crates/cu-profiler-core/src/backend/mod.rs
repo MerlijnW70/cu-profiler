@@ -49,4 +49,15 @@ pub trait ExecutionBackend {
     /// Returns [`crate::Error::Simulation`] on execution failure, or
     /// [`crate::Error::BackendUnimplemented`] for skeleton backends.
     fn run(&self, scenario: &Scenario) -> Result<SimulationOutput>;
+
+    /// Whether re-running the same scenario always yields identical logs.
+    ///
+    /// Deterministic backends (e.g. recorded-log replay) gain nothing from
+    /// multi-sampling — `Scenario::samples` is ignored for them, so the profiler
+    /// never reports fabricated run-to-run variance. Live execution backends that
+    /// can vary between runs override this to `false` (the default) so sampling
+    /// applies. See [`crate::profiler::Profiler::run`].
+    fn is_deterministic(&self) -> bool {
+        false
+    }
 }

@@ -325,6 +325,61 @@ fn bench_with_program_name_errors_clearly_without_executor() {
     assert!(stderr.contains("not found"), "stderr: {stderr}");
 }
 
+#[test]
+fn comment_dry_run_renders_sticky_body_from_config() {
+    let dir = scratch_dir("comment-dry");
+    assert!(run(&dir, &["init"]).status.success());
+
+    // `--dry-run` re-renders the Markdown report and prints it with the sticky
+    // marker, contacting no network — the deterministic, socket-free path.
+    let out = run(&dir, &["comment", "--dry-run"]);
+    assert!(out.status.success(), "comment --dry-run failed: {out:?}");
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    assert!(
+        stdout.starts_with("<!-- cu-profiler-report -->"),
+        "missing sticky marker: {stdout}"
+    );
+    assert!(
+        stdout.contains("cu-profiler report"),
+        "no report body: {stdout}"
+    );
+    assert!(stdout.contains("swap_exact_in"), "no scenario: {stdout}");
+}
+
+#[test]
+fn comment_dry_run_posts_input_file_verbatim() {
+    let dir = scratch_dir("comment-input");
+    assert!(run(&dir, &["init"]).status.success());
+
+    let md = dir.join("report.md");
+    std::fs::write(&md, "## custom report\nbody line").unwrap();
+
+    let out = run(
+        &dir,
+        &[
+            "comment",
+            "--dry-run",
+            "--input",
+            md.to_str().unwrap(),
+            "--marker",
+            "my-marker",
+        ],
+    );
+    assert!(
+        out.status.success(),
+        "comment --dry-run --input failed: {out:?}"
+    );
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    assert!(
+        stdout.starts_with("<!-- my-marker -->"),
+        "marker override: {stdout}"
+    );
+    assert!(
+        stdout.contains("## custom report"),
+        "input body missing: {stdout}"
+    );
+}
+
 #[cfg(feature = "anchor")]
 #[test]
 fn anchor_idl_labels_program_in_report() {

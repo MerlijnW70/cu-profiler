@@ -46,7 +46,9 @@ pub enum Command {
     Inspect(InspectArgs),
     /// Import a real transaction's logs (from a `getTransaction` JSON) as a scenario log.
     Import(ImportArgs),
-    /// Turnkey real-CU path: validate a bench plan and (optionally) build the program.
+    /// Post the Markdown report as a sticky pull-request comment.
+    Comment(CommentArgs),
+    /// Turnkey real-CU path: validate a bench plan and measure via cu-profiler-bench.
     Bench(BenchArgs),
 }
 
@@ -68,6 +70,11 @@ pub struct CommonRun {
     /// Only run scenarios carrying these tags (repeatable).
     #[arg(long = "tag")]
     pub tags: Vec<String>,
+
+    /// Override the per-scenario sample count (number of measurement runs).
+    /// Only affects non-deterministic backends; the recorded backend ignores it.
+    #[arg(long)]
+    pub samples: Option<u32>,
 }
 
 /// `cu-profiler run` / `cu-profiler ci`.
@@ -211,10 +218,44 @@ pub struct ImportArgs {
     pub logs_dir: PathBuf,
 }
 
-/// `cu-profiler bench` — turnkey real-CU path (scaffolding).
+/// `cu-profiler comment` — post the Markdown report as a sticky PR comment.
 ///
-/// Validates a declarative bench plan and resolves/builds the program `.so`. Live
-/// Mollusk execution is delivered by the Linux-only `cu-profiler-mollusk` crate.
+/// "Sticky" means one comment per PR that is created once and updated in place on
+/// every later run (identified by a hidden HTML marker), so a PR carries a single
+/// always-current report rather than a new comment per push.
+#[derive(Debug, Args)]
+pub struct CommentArgs {
+    #[command(flatten)]
+    pub common: CommonRun,
+
+    /// Post the contents of this Markdown file instead of re-rendering from config.
+    /// Typically the `report.md` a prior `ci --format markdown --output` step wrote.
+    #[arg(long)]
+    pub input: Option<PathBuf>,
+
+    /// Pull-request number. Defaults to the GitHub Actions event payload, then the
+    /// `refs/pull/<n>/merge` ref.
+    #[arg(long)]
+    pub pr: Option<u64>,
+
+    /// Target repository as `owner/repo`. Defaults to `$GITHUB_REPOSITORY`.
+    #[arg(long)]
+    pub repo: Option<String>,
+
+    /// Hidden marker identifying this tool's sticky comment. Use distinct markers
+    /// to keep multiple independent sticky comments on one PR.
+    #[arg(long, default_value = "cu-profiler-report")]
+    pub marker: String,
+
+    /// Render and print the comment body without contacting GitHub.
+    #[arg(long)]
+    pub dry_run: bool,
+}
+
+/// `cu-profiler bench` — turnkey real-CU path.
+///
+/// Validates a declarative bench plan and, with `--program-name`, measures real
+/// compute units via the Linux `cu-profiler-bench` executor.
 #[derive(Debug, Args)]
 pub struct BenchArgs {
     /// Bench fixture file (`[[instruction]]` declarations with accounts/data).

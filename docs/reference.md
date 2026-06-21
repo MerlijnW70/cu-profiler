@@ -438,6 +438,11 @@ scope marker quality
 runtime/version metadata availability
 ```
 
+**Sample variance** folds in when a scenario is multi-sampled (`samples > 1`) on a
+non-deterministic backend: a high coefficient of variation across the runs demotes
+confidence (≥2% → Medium, ≥10% → Low) with a reason. The deterministic recorded
+backend ignores `samples`, so it never reports variance it did not observe.
+
 Always report **why** confidence is not `High`. Example:
 
 ```
@@ -527,7 +532,11 @@ metadata
 
 ### 14.3 Markdown Output
 
-For GitHub PR comments.
+For GitHub PR comments. `cu-profiler run/ci --format markdown` renders the report as
+Markdown; `cu-profiler comment` (see §15) delivers it as a **sticky** PR comment —
+one comment per pull request, created once and updated in place on every later run,
+identified by a hidden `<!-- cu-profiler-report -->` marker. (The "GitHub PR comments"
+capability listed under §35 is delivered here.)
 
 ### 14.4 JUnit XML Output
 
@@ -583,6 +592,23 @@ Optimized CI mode:
 - clear exit codes;
 - JSON/Markdown artifacts;
 - no interactive prompts.
+
+### `cu-profiler comment`
+
+Posts the Markdown report as a sticky pull-request comment (§14.3). Flags:
+
+```
+--input        post a pre-rendered report.md instead of re-rendering from config
+--pr           PR number (defaults to the GitHub Actions event, then refs/pull/<n>/merge)
+--repo         owner/repo (defaults to $GITHUB_REPOSITORY)
+--marker       hidden marker identifying the sticky comment (default: cu-profiler-report)
+--dry-run      render and print the comment body without contacting GitHub
+```
+
+Auth is the `$GITHUB_TOKEN` env var (never a flag); the workflow needs
+`permissions: pull-requests: write`. On a non-PR build (e.g. `push`) the command
+no-ops. Requires the `remote` feature (on by default), like `import --signature`.
+`cu-profiler init --workflow` scaffolds a workflow that renders and posts the comment.
 
 ### `cu-profiler explain <scenario>`
 
@@ -837,13 +863,21 @@ on:
 jobs:
   cu-profiler:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write   # for the sticky PR comment
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo build --workspace
       - run: cargo test --workspace
-      - run: cargo run -p cu-profiler -- ci --config cu-profiler.toml --format json --output target/cu-profiler/report.json
+      - run: cargo run -p cu-profiler -- ci --config cu-profiler.toml --format markdown --output target/cu-profiler/report.md
+      - if: ${{ always() && github.event_name == 'pull_request' }}
+        run: cargo run -p cu-profiler -- comment --input target/cu-profiler/report.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
         with:
           name: cu-profiler-report
           path: target/cu-profiler/
