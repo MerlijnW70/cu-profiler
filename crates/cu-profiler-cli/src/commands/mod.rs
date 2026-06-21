@@ -3,6 +3,7 @@
 
 mod baseline;
 mod ci;
+mod comment;
 mod compare;
 mod explain;
 mod import;
@@ -12,6 +13,7 @@ mod run;
 
 pub use baseline::{approve as baseline_approve, save as baseline_save};
 pub use ci::run as ci;
+pub use comment::run as comment;
 pub use compare::run as compare;
 pub use explain::run as explain;
 pub use import::run as import;

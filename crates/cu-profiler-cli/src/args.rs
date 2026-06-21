@@ -46,6 +46,8 @@ pub enum Command {
     Inspect(InspectArgs),
     /// Import a real transaction's logs (from a `getTransaction` JSON) as a scenario log.
     Import(ImportArgs),
+    /// Post the Markdown report as a sticky pull-request comment.
+    Comment(CommentArgs),
 }
 
 /// Inputs shared by `run`, `ci` and `compare`.
@@ -207,6 +209,40 @@ pub struct ImportArgs {
     /// Directory to write `<name>.log` into.
     #[arg(long, default_value = ".cu/logs")]
     pub logs_dir: PathBuf,
+}
+
+/// `cu-profiler comment` — post the Markdown report as a sticky PR comment.
+///
+/// "Sticky" means one comment per PR that is created once and updated in place on
+/// every later run (identified by a hidden HTML marker), so a PR carries a single
+/// always-current report rather than a new comment per push.
+#[derive(Debug, Args)]
+pub struct CommentArgs {
+    #[command(flatten)]
+    pub common: CommonRun,
+
+    /// Post the contents of this Markdown file instead of re-rendering from config.
+    /// Typically the `report.md` a prior `ci --format markdown --output` step wrote.
+    #[arg(long)]
+    pub input: Option<PathBuf>,
+
+    /// Pull-request number. Defaults to the GitHub Actions event payload, then the
+    /// `refs/pull/<n>/merge` ref.
+    #[arg(long)]
+    pub pr: Option<u64>,
+
+    /// Target repository as `owner/repo`. Defaults to `$GITHUB_REPOSITORY`.
+    #[arg(long)]
+    pub repo: Option<String>,
+
+    /// Hidden marker identifying this tool's sticky comment. Use distinct markers
+    /// to keep multiple independent sticky comments on one PR.
+    #[arg(long, default_value = "cu-profiler-report")]
+    pub marker: String,
+
+    /// Render and print the comment body without contacting GitHub.
+    #[arg(long)]
+    pub dry_run: bool,
 }
 
 /// `cu-profiler init`.
