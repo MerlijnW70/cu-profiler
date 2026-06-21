@@ -144,6 +144,10 @@ pub struct ScenarioConfig {
     pub tags: Vec<String>,
     /// Description.
     pub description: String,
+    /// How many times to measure (>= 1). Only meaningful on non-deterministic
+    /// backends; the recorded backend ignores it. Defaults to 1.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub samples: Option<u32>,
 }
 
 impl Config {
@@ -227,7 +231,7 @@ impl Config {
                 owner: None,
                 expected: crate::scenario::ExpectedResult::Success,
                 budget: self.effective_policy(name),
-                samples: 1,
+                samples: sc.samples.unwrap_or(1).max(1),
             })
             .collect()
     }

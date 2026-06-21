@@ -438,6 +438,11 @@ scope marker quality
 runtime/version metadata availability
 ```
 
+**Sample variance** folds in when a scenario is multi-sampled (`samples > 1`) on a
+non-deterministic backend: a high coefficient of variation across the runs demotes
+confidence (≥2% → Medium, ≥10% → Low) with a reason. The deterministic recorded
+backend ignores `samples`, so it never reports variance it did not observe.
+
 Always report **why** confidence is not `High`. Example:
 
 ```

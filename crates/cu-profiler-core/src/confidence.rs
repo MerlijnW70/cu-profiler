@@ -80,6 +80,9 @@ pub struct ConfidenceFactors {
     pub scope_markers: usize,
     /// Whether runtime/version metadata was available.
     pub metadata_available: bool,
+    /// Coefficient of variation of `total_cu` across samples, when multi-sampled.
+    /// `None` for a single sample / deterministic backend.
+    pub sample_cv: Option<f64>,
 }
 
 impl Default for ConfidenceFactors {
@@ -92,6 +95,7 @@ impl Default for ConfidenceFactors {
             unattributed_pct: 0.0,
             scope_markers: 0,
             metadata_available: false,
+            sample_cv: None,
         }
     }
 }
@@ -135,6 +139,17 @@ pub fn score(factors: &ConfidenceFactors) -> Confidence {
     if factors.scope_markers > 0 {
         reasons.push(format!("{} scope markers detected", factors.scope_markers));
     }
+    // Run-to-run variance across samples: a wide spread means the headline number
+    // is less trustworthy. Thresholds are on the coefficient of variation.
+    if let Some(cv) = factors.sample_cv {
+        if cv >= 0.10 {
+            level = level.min(ConfidenceLevel::Low);
+            reasons.push(format!("high run-to-run variance (CV {:.1}%)", cv * 100.0));
+        } else if cv >= 0.02 {
+            level = level.min(ConfidenceLevel::Medium);
+            reasons.push(format!("run-to-run variance (CV {:.1}%)", cv * 100.0));
+        }
+    }
     if !factors.metadata_available {
         level = level.min(ConfidenceLevel::Medium);
         reasons.push("runtime/version metadata unavailable".to_string());
@@ -176,6 +191,34 @@ mod tests {
         let c = score(&f);
         assert_eq!(c.level, ConfidenceLevel::Medium);
         assert!(c.reasons.iter().any(|r| r.contains("22% unattributed")));
+    }
+
+    #[test]
+    fn sample_variance_demotes_confidence() {
+        // Low spread → Medium; high spread → Low.
+        let medium = ConfidenceFactors {
+            metadata_available: true,
+            sample_cv: Some(0.05),
+            ..Default::default()
+        };
+        let c = score(&medium);
+        assert_eq!(c.level, ConfidenceLevel::Medium);
+        assert!(c.reasons.iter().any(|r| r.contains("variance")));
+
+        let low = ConfidenceFactors {
+            metadata_available: true,
+            sample_cv: Some(0.25),
+            ..Default::default()
+        };
+        assert_eq!(score(&low).level, ConfidenceLevel::Low);
+
+        // A tiny spread is within tolerance and stays High.
+        let high = ConfidenceFactors {
+            metadata_available: true,
+            sample_cv: Some(0.005),
+            ..Default::default()
+        };
+        assert_eq!(score(&high).level, ConfidenceLevel::High);
     }
 
     #[test]

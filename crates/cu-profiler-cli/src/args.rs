@@ -68,6 +68,11 @@ pub struct CommonRun {
     /// Only run scenarios carrying these tags (repeatable).
     #[arg(long = "tag")]
     pub tags: Vec<String>,
+
+    /// Override the per-scenario sample count (number of measurement runs).
+    /// Only affects non-deterministic backends; the recorded backend ignores it.
+    #[arg(long)]
+    pub samples: Option<u32>,
 }
 
 /// `cu-profiler run` / `cu-profiler ci`.

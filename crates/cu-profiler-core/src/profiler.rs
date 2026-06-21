@@ -94,13 +94,39 @@ impl Profiler {
         scenario: &Scenario,
         baseline: Option<&BaselineStore>,
     ) -> ScenarioReport {
-        match backend.run(scenario) {
-            Ok(output) => {
-                let analysis = parser::analyze(&output.logs, &self.registry);
-                self.assemble(scenario, analysis, output.success, output.logs, baseline)
+        // The first run drives the structural report (call tree, per-instruction,
+        // scopes). On a non-deterministic backend, extra samples add only their
+        // `total_cu` to a distribution; a deterministic backend (recorded replay)
+        // is run once — multi-sampling it would fabricate a spread of zero.
+        let output = match backend.run(scenario) {
+            Ok(output) => output,
+            Err(e) => return self.simulation_error_report(scenario, &e.to_string()),
+        };
+        let analysis = parser::analyze(&output.logs, &self.registry);
+
+        let extra = if backend.is_deterministic() {
+            0
+        } else {
+            u64::from(scenario.samples.saturating_sub(1))
+        };
+        let mut totals = vec![analysis.total_cu];
+        for _ in 0..extra {
+            // Best-effort: a sample that fails to execute or parse is skipped, not
+            // fatal — the surviving samples still yield an honest distribution.
+            if let Ok(o) = backend.run(scenario) {
+                totals.push(parser::analyze(&o.logs, &self.registry).total_cu);
             }
-            Err(e) => self.simulation_error_report(scenario, &e.to_string()),
         }
+        let sample_stats = crate::model::SampleStats::from_samples(&totals);
+
+        self.assemble(
+            scenario,
+            analysis,
+            output.success,
+            output.logs,
+            baseline,
+            sample_stats,
+        )
     }
 
     fn assemble(
@@ -110,6 +136,7 @@ impl Profiler {
         sim_success: bool,
         logs: Vec<String>,
         baseline: Option<&BaselineStore>,
+        sample_stats: Option<crate::model::SampleStats>,
     ) -> ScenarioReport {
         // Each top-level (depth-1) invocation is one transaction instruction.
         let per_instruction: Vec<InstructionMeasurement> = analysis
@@ -135,6 +162,7 @@ impl Profiler {
             unattributed_pct: analysis.unattributed_pct,
             instrumentation_overhead_pct: None,
             per_instruction,
+            sample_stats,
             simulation_success: sim_success && analysis.simulation_success,
         };
 
@@ -160,7 +188,11 @@ impl Profiler {
             budget::evaluate(&measurement, &scenario.budget, baseline_units);
 
         // Confidence.
-        let confidence = self.score_confidence(&analysis, comparison.as_ref());
+        let confidence = self.score_confidence(
+            &analysis,
+            comparison.as_ref(),
+            measurement.sample_stats.map(|s| s.cv),
+        );
 
         // Status.
         let status = self.derive_status(&measurement, &policy_results, scenario.expected);
@@ -198,6 +230,7 @@ impl Profiler {
         &self,
         analysis: &ParseAnalysis,
         comparison: Option<&BaselineComparison>,
+        sample_cv: Option<f64>,
     ) -> Confidence {
         // Unattributed CU only counts against confidence when the user opted
         // into scope attribution; otherwise it is just normal program work.
@@ -214,6 +247,7 @@ impl Profiler {
             unattributed_pct,
             scope_markers: analysis.scope_marker_count,
             metadata_available: true,
+            sample_cv,
         };
         confidence::score(&factors)
     }
@@ -324,6 +358,68 @@ mod tests {
                 .iter()
                 .any(|d| d.id == "near_budget_limit")
         );
+    }
+
+    /// A non-deterministic backend that returns a different CU figure per call,
+    /// cycling through `cus` — used to exercise multi-sampling and variance.
+    struct VaryingBackend {
+        calls: std::cell::Cell<usize>,
+        cus: Vec<u64>,
+    }
+
+    impl crate::backend::ExecutionBackend for VaryingBackend {
+        fn kind(&self) -> crate::metadata::BackendKind {
+            crate::metadata::BackendKind::Mollusk
+        }
+        fn run(&self, _scenario: &Scenario) -> crate::Result<crate::backend::SimulationOutput> {
+            let i = self.calls.get();
+            self.calls.set(i + 1);
+            let cu = self.cus[i % self.cus.len()];
+            Ok(crate::backend::SimulationOutput::success(vec![
+                "Program P invoke [1]".to_string(),
+                format!("Program P consumed {cu} of 200000 compute units"),
+                "Program P success".to_string(),
+            ]))
+        }
+    }
+
+    #[test]
+    fn multi_sample_records_variance_and_demotes_confidence() {
+        let backend = VaryingBackend {
+            calls: std::cell::Cell::new(0),
+            cus: vec![100_000, 120_000, 110_000],
+        };
+        let mut s = swap_scenario(200_000);
+        s.samples = 3;
+        let report = Profiler::new().run(&backend, &[s], None, RunMetadata::recorded("0.1.0"));
+
+        let stats = report.scenarios[0]
+            .measurement
+            .sample_stats
+            .expect("multi-sample stats present");
+        assert_eq!(stats.count, 3);
+        assert_eq!(stats.min, 100_000);
+        assert_eq!(stats.max, 120_000);
+        assert!(stats.variance > 0.0);
+        // ~7.4% CV demotes confidence below High with a variance reason.
+        assert!(report.scenarios[0].confidence.level < confidence::ConfidenceLevel::High);
+        assert!(
+            report.scenarios[0]
+                .confidence
+                .reasons
+                .iter()
+                .any(|r| r.contains("variance"))
+        );
+    }
+
+    #[test]
+    fn deterministic_backend_ignores_samples() {
+        // The recorded backend is deterministic: samples > 1 must not fabricate a
+        // distribution — there is no real run-to-run spread to report.
+        let mut s = swap_scenario(200_000);
+        s.samples = 5;
+        let report = Profiler::new().run(&backend(), &[s], None, RunMetadata::recorded("0.1.0"));
+        assert!(report.scenarios[0].measurement.sample_stats.is_none());
     }
 
     #[test]

@@ -14,6 +14,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `--input report.md`, `--pr`, `--repo`, `--marker`, and `--dry-run` (no network).
   `init --workflow` now scaffolds a render-and-comment step with
   `permissions: pull-requests: write`.
+- **Multi-sample runs + variance.** `Scenario.samples` (and a `--samples` override)
+  now run a scenario N times on non-deterministic backends and record a `SampleStats`
+  distribution (count/min/median/max/variance/std-dev/CV) in the measurement. Variance
+  folds into the confidence score (CV ≥2% → Medium, ≥10% → Low), implementing the
+  spec §12 "sample variance" factor. The deterministic recorded backend ignores
+  `samples` and never fabricates a spread (`ExecutionBackend::is_deterministic`).
 
 ## [0.1.2] - 2026-06-20
 
