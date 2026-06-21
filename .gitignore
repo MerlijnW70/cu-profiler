@@ -14,6 +14,7 @@
 # Scaffolding from running `init` in the repo root (the tool profiling itself)
 /cu-profiler.toml
 /examples/
+/bench.toml
 
 # Local-only tooling and agent config — intentionally not shared
 .gate/

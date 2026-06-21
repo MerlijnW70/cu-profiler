@@ -261,6 +261,29 @@ fn import_file_without_logs_reports_error() {
 }
 
 #[test]
+fn init_scaffolds_a_valid_bench_toml() {
+    let dir = scratch_dir("init-bench");
+    assert!(run(&dir, &["init"]).status.success());
+
+    // `init` writes a starter bench.toml, and it must pass `bench`'s validation
+    // out of the box (so the turnkey path is discoverable and correct by default).
+    assert!(
+        dir.join("bench.toml").exists(),
+        "init should scaffold bench.toml"
+    );
+    let out = run(&dir, &["bench"]); // defaults to --fixtures bench.toml
+    assert!(
+        out.status.success(),
+        "scaffolded bench.toml should validate: {out:?}"
+    );
+    assert!(
+        String::from_utf8_lossy(&out.stdout).contains("bench plan OK"),
+        "stdout: {}",
+        String::from_utf8_lossy(&out.stdout)
+    );
+}
+
+#[test]
 fn bench_validates_a_plan_and_summarises() {
     let dir = scratch_dir("bench-ok");
     let fixtures = dir.join("bench.toml");

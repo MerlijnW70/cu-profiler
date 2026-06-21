@@ -6,6 +6,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- `cu-profiler init` now scaffolds a starter `bench.toml` for the turnkey real-CU
+  path, so `cu-profiler bench` is discoverable and validates out of the box.
+
 ## [0.2.0] - 2026-06-21
 
 ### Added

@@ -561,6 +561,7 @@ cu-profiler.toml
 .cu/baseline.json (if desired)
 .github/workflows/cu-profiler.yml (if flag)
 examples/scenarios.rs
+bench.toml (starter plan for the turnkey real-CU path)
 ```
 
 ### `cu-profiler run`
