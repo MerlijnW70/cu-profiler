@@ -18,6 +18,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   validated `BenchPlan` — parsing each fixture's base58 addresses and hex data into
   Solana `Instruction`/`Account` types and metering real compute units, no
   hand-written harness. Validated by the SBF CI job.
+- **`cu-profiler-bench` binary (Linux-only, one-command turnkey path).** A thin
+  `cu-profiler-bench --fixtures bench.toml --program-name <so>` entry point in the
+  detached crate ties `run_plan` to the report renderer — declarative plan in, real
+  metered report out — keeping the main `cu-profiler` CLI Solana-free.
 
 ## [0.1.2] - 2026-06-20
 

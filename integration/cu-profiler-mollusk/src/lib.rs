@@ -20,9 +20,10 @@ use std::collections::HashMap;
 use cu_profiler_core::backend::{ExecutionBackend, SimulationOutput};
 use cu_profiler_core::bench::{BenchPlan, InstructionFixture};
 use cu_profiler_core::error::Error;
-use cu_profiler_core::metadata::BackendKind;
+use cu_profiler_core::metadata::{BackendKind, InstrumentationMode, RunMetadata};
+use cu_profiler_core::model::Report;
 use cu_profiler_core::scenario::Scenario;
-use cu_profiler_core::Result;
+use cu_profiler_core::{Profiler, Result};
 
 use mollusk_svm::Mollusk;
 use solana_account::Account;
@@ -168,6 +169,31 @@ impl PreparedInstruction {
     }
 }
 
+/// Run a whole [`BenchPlan`] end-to-end and assemble a [`Report`]: build a
+/// [`MolluskBackend`] from the plan (loading `program_name`), profile one scenario
+/// per instruction, and meter real compute units. This is the one-call turnkey API
+/// behind the `cu-profiler-bench` binary.
+///
+/// # Errors
+/// Returns [`Error::Config`] if the plan is malformed (bad address or hex).
+pub fn run_plan(plan: &BenchPlan, program_name: &str) -> Result<Report> {
+    let backend = MolluskBackend::from_plan(plan, program_name)?;
+    let scenarios: Vec<Scenario> = plan
+        .instructions
+        .iter()
+        .map(|ix| Scenario::new(&ix.scenario))
+        .collect();
+    let metadata = RunMetadata {
+        profiler_version: cu_profiler_core::VERSION.to_string(),
+        backend: BackendKind::Mollusk,
+        instrumentation: InstrumentationMode::Off,
+        git_commit: None,
+        solana_versions: Vec::new(),
+        generated_at: None,
+    };
+    Ok(Profiler::new().run(&backend, &scenarios, None, metadata))
+}
+
 /// Parse a base58 Solana address, mapping failure to a clear config error.
 fn parse_pubkey(s: &str, what: &str) -> Result<Pubkey> {
     s.parse::<Pubkey>()
@@ -284,6 +310,17 @@ mod tests {
         let backend =
             MolluskBackend::from_plan(&plan, "cu_profiler_demo_program").expect("plan converts");
         assert!(backend.setups.contains_key("swap"));
+    }
+
+    #[test]
+    fn run_plan_meters_the_demo_into_a_report() {
+        let program_id = Pubkey::new_unique();
+        let toml = format!("[[instruction]]\nscenario=\"demo\"\nprogram_id=\"{program_id}\"\n");
+        let plan = BenchPlan::from_toml(&toml).expect("valid plan");
+        let report = run_plan(&plan, "cu_profiler_demo_program").expect("plan runs");
+        assert_eq!(report.scenarios.len(), 1);
+        assert_eq!(report.metadata.backend, BackendKind::Mollusk);
+        assert!(report.scenarios[0].measurement.total_cu > 0);
     }
 
     #[test]
