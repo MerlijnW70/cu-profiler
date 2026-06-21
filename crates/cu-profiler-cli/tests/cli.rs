@@ -261,6 +261,71 @@ fn import_file_without_logs_reports_error() {
 }
 
 #[test]
+fn bench_validates_a_plan_and_summarises() {
+    let dir = scratch_dir("bench-ok");
+    let fixtures = dir.join("bench.toml");
+    std::fs::write(
+        &fixtures,
+        "[[instruction]]\nscenario=\"swap\"\nprogram_id=\"11111111111111111111111111111111\"\ndata=\"01ab\"\n",
+    )
+    .unwrap();
+
+    let out = run(&dir, &["bench", "--fixtures", fixtures.to_str().unwrap()]);
+    assert!(out.status.success(), "bench failed: {out:?}");
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    assert!(
+        stdout.contains("bench plan OK: 1 instruction"),
+        "summary: {stdout}"
+    );
+    assert!(stdout.contains("swap"), "scenario: {stdout}");
+}
+
+#[test]
+fn bench_rejects_an_invalid_plan() {
+    let dir = scratch_dir("bench-bad");
+    let fixtures = dir.join("bench.toml");
+    // Non-base58 program id must be rejected with a non-zero exit.
+    std::fs::write(
+        &fixtures,
+        "[[instruction]]\nscenario=\"s\"\nprogram_id=\"not-valid-0OIl\"\n",
+    )
+    .unwrap();
+
+    let out = run(&dir, &["bench", "--fixtures", fixtures.to_str().unwrap()]);
+    assert!(!out.status.success(), "expected invalid plan to fail");
+    assert!(String::from_utf8_lossy(&out.stderr).contains("base58"));
+}
+
+#[test]
+fn bench_with_program_name_errors_clearly_without_executor() {
+    let dir = scratch_dir("bench-noexec");
+    let fixtures = dir.join("bench.toml");
+    std::fs::write(
+        &fixtures,
+        "[[instruction]]\nscenario=\"swap\"\nprogram_id=\"11111111111111111111111111111111\"\n",
+    )
+    .unwrap();
+
+    // Asking to measure (--program-name) when the Linux `cu-profiler-bench` executor
+    // is not on PATH must fail clearly with the exact command to run — never silently
+    // pretend to have measured.
+    let out = run(
+        &dir,
+        &[
+            "bench",
+            "--fixtures",
+            fixtures.to_str().unwrap(),
+            "--program-name",
+            "demo",
+        ],
+    );
+    assert!(!out.status.success(), "should fail without the executor");
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(stderr.contains("cu-profiler-bench"), "stderr: {stderr}");
+    assert!(stderr.contains("not found"), "stderr: {stderr}");
+}
+
+#[test]
 fn comment_dry_run_renders_sticky_body_from_config() {
     let dir = scratch_dir("comment-dry");
     assert!(run(&dir, &["init"]).status.success());

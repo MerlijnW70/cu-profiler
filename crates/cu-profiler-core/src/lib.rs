@@ -41,6 +41,7 @@
 pub mod anchor;
 pub mod backend;
 pub mod baseline;
+pub mod bench;
 pub mod budget;
 pub mod confidence;
 pub mod config;

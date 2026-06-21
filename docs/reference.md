@@ -618,6 +618,41 @@ Diagnoses a single scenario.
 
 Reads an existing report and shows analysis without re-simulating.
 
+### `cu-profiler bench`
+
+Turnkey real-CU path. Reads a declarative bench plan (`bench.toml`), validates it,
+optionally builds the program, and — with `--program-name` — measures real compute
+units by delegating to the Linux `cu-profiler-bench` executor (see below). Flags:
+
+```
+--fixtures       bench plan file (default bench.toml)
+--program-name   .so stem (loaded from $SBF_OUT_DIR); with it, bench measures
+--build          run `cargo build-sbf` first
+--manifest-path  directory to build in (default .)
+```
+
+A `bench.toml` declares the instruction(s) to execute as data:
+
+```toml
+[[instruction]]
+scenario   = "swap_exact_in"
+program_id = "SwapPRogram1111111111111111111111111111"
+data       = "01ab"               # hex instruction data
+
+  [[instruction.account]]
+  pubkey   = "11111111111111111111111111111111"
+  signer   = true
+  writable = true
+  lamports = 1000000
+```
+
+Real measurement is performed by `cu-profiler-bench`, a Linux-only executor built
+from the `cu-profiler-mollusk` crate (it links the Solana/Mollusk stack, which is not
+buildable on every host). `cu-profiler bench --program-name <p>` runs it over `PATH` —
+a runtime sibling, not a build dependency, so the main CLI stays Solana-free. Without
+the executor installed, `bench` validates the plan and fails with the exact command to
+run; without `--program-name`, it validates the plan only.
+
 ---
 
 ## 16. Exit Codes

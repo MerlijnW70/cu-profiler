@@ -48,6 +48,8 @@ pub enum Command {
     Import(ImportArgs),
     /// Post the Markdown report as a sticky pull-request comment.
     Comment(CommentArgs),
+    /// Turnkey real-CU path: validate a bench plan and measure via cu-profiler-bench.
+    Bench(BenchArgs),
 }
 
 /// Inputs shared by `run`, `ci` and `compare`.
@@ -248,6 +250,30 @@ pub struct CommentArgs {
     /// Render and print the comment body without contacting GitHub.
     #[arg(long)]
     pub dry_run: bool,
+}
+
+/// `cu-profiler bench` — turnkey real-CU path.
+///
+/// Validates a declarative bench plan and, with `--program-name`, measures real
+/// compute units via the Linux `cu-profiler-bench` executor.
+#[derive(Debug, Args)]
+pub struct BenchArgs {
+    /// Bench fixture file (`[[instruction]]` declarations with accounts/data).
+    #[arg(long, default_value = "bench.toml")]
+    pub fixtures: PathBuf,
+
+    /// Program name (the `.so` stem, loaded from `$SBF_OUT_DIR`). With it, `bench`
+    /// measures via the `cu-profiler-bench` executor; without it, validate only.
+    #[arg(long)]
+    pub program_name: Option<String>,
+
+    /// Build the program with `cargo build-sbf` before benchmarking.
+    #[arg(long)]
+    pub build: bool,
+
+    /// Directory to run `cargo build-sbf` in.
+    #[arg(long, default_value = ".")]
+    pub manifest_path: PathBuf,
 }
 
 /// `cu-profiler init`.

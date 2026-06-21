@@ -20,6 +20,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   folds into the confidence score (CV ≥2% → Medium, ≥10% → Low), implementing the
   spec §12 "sample variance" factor. The deterministic recorded backend ignores
   `samples` and never fabricates a spread (`ExecutionBackend::is_deterministic`).
+- **`cu-profiler bench` (turnkey real-CU).** A declarative bench-plan schema
+  (`cu_profiler_core::bench::BenchPlan`: instructions, program id, hex data, accounts)
+  with base58/hex validation, and a `bench` subcommand that validates the plan,
+  optionally builds the program (`--build` via `cargo build-sbf`), and — with
+  `--program-name` — measures real compute units by delegating to the Linux
+  `cu-profiler-bench` executor over `PATH`. The executor links the Solana stack and is
+  a runtime sibling, not a build dependency, so the main CLI stays Solana-free; when
+  it is absent, `bench` validates the plan and fails with the exact command to run.
 
 ## [0.1.2] - 2026-06-20
 
