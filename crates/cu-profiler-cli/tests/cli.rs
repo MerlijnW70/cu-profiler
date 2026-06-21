@@ -260,6 +260,42 @@ fn import_file_without_logs_reports_error() {
     assert!(!dir.join(".cu/logs/empty.log").exists());
 }
 
+#[test]
+fn bench_validates_a_plan_and_summarises() {
+    let dir = scratch_dir("bench-ok");
+    let fixtures = dir.join("bench.toml");
+    std::fs::write(
+        &fixtures,
+        "[[instruction]]\nscenario=\"swap\"\nprogram_id=\"11111111111111111111111111111111\"\ndata=\"01ab\"\n",
+    )
+    .unwrap();
+
+    let out = run(&dir, &["bench", "--fixtures", fixtures.to_str().unwrap()]);
+    assert!(out.status.success(), "bench failed: {out:?}");
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    assert!(
+        stdout.contains("bench plan OK: 1 instruction"),
+        "summary: {stdout}"
+    );
+    assert!(stdout.contains("swap"), "scenario: {stdout}");
+}
+
+#[test]
+fn bench_rejects_an_invalid_plan() {
+    let dir = scratch_dir("bench-bad");
+    let fixtures = dir.join("bench.toml");
+    // Non-base58 program id must be rejected with a non-zero exit.
+    std::fs::write(
+        &fixtures,
+        "[[instruction]]\nscenario=\"s\"\nprogram_id=\"not-valid-0OIl\"\n",
+    )
+    .unwrap();
+
+    let out = run(&dir, &["bench", "--fixtures", fixtures.to_str().unwrap()]);
+    assert!(!out.status.success(), "expected invalid plan to fail");
+    assert!(String::from_utf8_lossy(&out.stderr).contains("base58"));
+}
+
 #[cfg(feature = "anchor")]
 #[test]
 fn anchor_idl_labels_program_in_report() {

@@ -6,6 +6,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- **`cu-profiler bench` (turnkey real-CU, scaffolding).** A declarative bench-plan
+  schema (`cu_profiler_core::bench::BenchPlan`: instructions, program id, hex data,
+  accounts) with base58/hex validation, and a `bench` subcommand that validates the
+  plan and resolves/builds the program `.so` (`--program` / `--build` via
+  `cargo build-sbf`). Live Mollusk execution that produces real compute units is the
+  Linux-only follow-up (the SBF stack does not build on every host).
+
 ## [0.1.2] - 2026-06-20
 
 ### Security

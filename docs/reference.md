@@ -592,6 +592,38 @@ Diagnoses a single scenario.
 
 Reads an existing report and shows analysis without re-simulating.
 
+### `cu-profiler bench`
+
+Turnkey real-CU path (scaffolding). Reads a declarative bench plan (`bench.toml`),
+validates it, and resolves or builds the program `.so`. Flags:
+
+```
+--fixtures       bench plan file (default bench.toml)
+--program        path to a compiled .so (skips building)
+--program-name   .so stem to locate under $SBF_OUT_DIR / target/deploy
+--build          run `cargo build-sbf` first
+--manifest-path  directory to build in (default .)
+```
+
+A `bench.toml` declares the instruction(s) to execute as data:
+
+```toml
+[[instruction]]
+scenario   = "swap_exact_in"
+program_id = "SwapPRogram1111111111111111111111111111"
+data       = "01ab"               # hex instruction data
+
+  [[instruction.account]]
+  pubkey   = "11111111111111111111111111111111"
+  signer   = true
+  writable = true
+  lamports = 1000000
+```
+
+Live compute-unit execution runs on the Linux-only `cu-profiler-mollusk` backend
+(the Solana/SBF stack is not buildable on every host); this command validates and
+prepares the plan, and the Mollusk execution that produces real CU is wired on top.
+
 ---
 
 ## 16. Exit Codes

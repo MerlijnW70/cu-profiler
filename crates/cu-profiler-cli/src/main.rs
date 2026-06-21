@@ -39,6 +39,7 @@ fn dispatch(cli: &Cli) -> Result<ExitCode> {
         Command::Explain(args) => commands::explain(args, quiet),
         Command::Inspect(args) => commands::inspect(args, quiet),
         Command::Import(args) => commands::import(args, quiet),
+        Command::Bench(args) => commands::bench(args, quiet),
         Command::Baseline(args) => match &args.command {
             BaselineCommand::Save(a) => commands::baseline_save(a, quiet),
             BaselineCommand::Approve(a) => commands::baseline_approve(a, quiet),

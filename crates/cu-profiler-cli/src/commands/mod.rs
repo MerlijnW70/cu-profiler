@@ -2,6 +2,7 @@
 //! `cu-profiler-core`, render with `cu-profiler-report`, choose an exit code.
 
 mod baseline;
+mod bench;
 mod ci;
 mod compare;
 mod explain;
@@ -11,6 +12,7 @@ mod inspect;
 mod run;
 
 pub use baseline::{approve as baseline_approve, save as baseline_save};
+pub use bench::run as bench;
 pub use ci::run as ci;
 pub use compare::run as compare;
 pub use explain::run as explain;

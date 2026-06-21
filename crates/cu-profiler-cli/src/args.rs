@@ -46,6 +46,8 @@ pub enum Command {
     Inspect(InspectArgs),
     /// Import a real transaction's logs (from a `getTransaction` JSON) as a scenario log.
     Import(ImportArgs),
+    /// Turnkey real-CU path: validate a bench plan and (optionally) build the program.
+    Bench(BenchArgs),
 }
 
 /// Inputs shared by `run`, `ci` and `compare`.
@@ -207,6 +209,33 @@ pub struct ImportArgs {
     /// Directory to write `<name>.log` into.
     #[arg(long, default_value = ".cu/logs")]
     pub logs_dir: PathBuf,
+}
+
+/// `cu-profiler bench` — turnkey real-CU path (scaffolding).
+///
+/// Validates a declarative bench plan and resolves/builds the program `.so`. Live
+/// Mollusk execution is delivered by the Linux-only `cu-profiler-mollusk` crate.
+#[derive(Debug, Args)]
+pub struct BenchArgs {
+    /// Bench fixture file (`[[instruction]]` declarations with accounts/data).
+    #[arg(long, default_value = "bench.toml")]
+    pub fixtures: PathBuf,
+
+    /// Path to the already-compiled program `.so` (skips building).
+    #[arg(long)]
+    pub program: Option<PathBuf>,
+
+    /// Program name (the `.so` stem) to locate under `$SBF_OUT_DIR`/`target/deploy`.
+    #[arg(long)]
+    pub program_name: Option<String>,
+
+    /// Build the program with `cargo build-sbf` before benchmarking.
+    #[arg(long)]
+    pub build: bool,
+
+    /// Directory to run `cargo build-sbf` in.
+    #[arg(long, default_value = ".")]
+    pub manifest_path: PathBuf,
 }
 
 /// `cu-profiler init`.
