@@ -64,6 +64,75 @@ pub struct InstructionMeasurement {
     pub consumed: Option<u64>,
 }
 
+/// Distribution of `total_cu` across multiple measurement samples.
+///
+/// Only present when a scenario was run more than once on a *non-deterministic*
+/// backend (`Scenario::samples > 1`); the recorded backend is deterministic, so it
+/// never produces this — the tool never fabricates a spread it did not observe.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct SampleStats {
+    /// Number of samples taken.
+    pub count: u32,
+    /// Smallest observed `total_cu`.
+    pub min: u64,
+    /// Median observed `total_cu`.
+    pub median: u64,
+    /// Largest observed `total_cu`.
+    pub max: u64,
+    /// Population variance of `total_cu`.
+    pub variance: f64,
+    /// Standard deviation of `total_cu` (`sqrt(variance)`).
+    pub std_dev: f64,
+    /// Coefficient of variation (`std_dev / mean`); `0.0` when the mean is `0`.
+    pub cv: f64,
+}
+
+impl SampleStats {
+    /// Compute statistics over the per-sample `total_cu` values, or `None` for
+    /// fewer than two samples (a single run has no distribution).
+    #[must_use]
+    pub fn from_samples(totals: &[u64]) -> Option<Self> {
+        if totals.len() < 2 {
+            return None;
+        }
+        let count = totals.len() as u32;
+        let min = *totals.iter().min()?;
+        let max = *totals.iter().max()?;
+
+        let mut sorted = totals.to_vec();
+        sorted.sort_unstable();
+        let mid = sorted.len() / 2;
+        let median = if sorted.len() % 2 == 1 {
+            sorted[mid]
+        } else {
+            (sorted[mid - 1] + sorted[mid]) / 2
+        };
+
+        let n = totals.len() as f64;
+        let mean = totals.iter().map(|&x| x as f64).sum::<f64>() / n;
+        let variance = totals
+            .iter()
+            .map(|&x| {
+                let d = x as f64 - mean;
+                d * d
+            })
+            .sum::<f64>()
+            / n;
+        let std_dev = variance.sqrt();
+        let cv = if mean == 0.0 { 0.0 } else { std_dev / mean };
+
+        Some(Self {
+            count,
+            min,
+            median,
+            max,
+            variance,
+            std_dev,
+            cv,
+        })
+    }
+}
+
 /// The quantitative core of a scenario result.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Measurement {
@@ -89,6 +158,10 @@ pub struct Measurement {
     /// Per-instruction breakdown.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub per_instruction: Vec<InstructionMeasurement>,
+    /// Distribution of `total_cu` across samples, when multi-sampled (>1 run on a
+    /// non-deterministic backend). Absent for single-sample / recorded runs.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sample_stats: Option<SampleStats>,
     /// Whether the simulation completed successfully.
     pub simulation_success: bool,
 }
@@ -108,6 +181,7 @@ impl Measurement {
             unattributed_pct: 0.0,
             instrumentation_overhead_pct: None,
             per_instruction: Vec::new(),
+            sample_stats: None,
             simulation_success: true,
         }
     }
@@ -211,6 +285,39 @@ mod tests {
     use super::*;
     use crate::confidence::Confidence;
     use crate::metadata::RunMetadata;
+
+    #[test]
+    fn sample_stats_needs_at_least_two_samples() {
+        assert!(SampleStats::from_samples(&[]).is_none());
+        assert!(SampleStats::from_samples(&[42]).is_none());
+    }
+
+    #[test]
+    fn sample_stats_computes_spread() {
+        let s = SampleStats::from_samples(&[100, 120, 110]).expect("two+ samples");
+        assert_eq!(s.count, 3);
+        assert_eq!(s.min, 100);
+        assert_eq!(s.max, 120);
+        assert_eq!(s.median, 110);
+        // mean 110, population variance ((100)+(100)+0)/3 = 66.67, std ~8.16.
+        assert!((s.variance - 66.6667).abs() < 0.01);
+        assert!((s.std_dev - 8.165).abs() < 0.01);
+        assert!((s.cv - 0.0742).abs() < 0.001);
+    }
+
+    #[test]
+    fn sample_stats_identical_samples_have_zero_variance() {
+        let s = SampleStats::from_samples(&[500, 500, 500, 500]).unwrap();
+        assert_eq!(s.variance, 0.0);
+        assert_eq!(s.cv, 0.0);
+        assert_eq!(s.median, 500);
+    }
+
+    #[test]
+    fn sample_stats_even_count_medians_the_middle_pair() {
+        let s = SampleStats::from_samples(&[10, 20, 30, 40]).unwrap();
+        assert_eq!(s.median, 25); // (20 + 30) / 2
+    }
 
     fn scenario(name: &str, status: Status, cu: u64) -> ScenarioReport {
         ScenarioReport {

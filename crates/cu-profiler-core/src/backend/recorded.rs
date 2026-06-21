@@ -43,6 +43,11 @@ impl ExecutionBackend for RecordedLogsBackend {
         BackendKind::Recorded
     }
 
+    /// Replaying a fixed log is deterministic — multi-sampling is a no-op here.
+    fn is_deterministic(&self) -> bool {
+        true
+    }
+
     fn run(&self, scenario: &Scenario) -> Result<SimulationOutput> {
         self.by_scenario
             .get(&scenario.name)
