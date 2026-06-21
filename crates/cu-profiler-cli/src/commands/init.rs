@@ -96,13 +96,26 @@ on:
 jobs:
   cu-profiler:
     runs-on: ubuntu-latest
+    # `pull-requests: write` lets the sticky-comment step post on PRs.
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo build --workspace
       - run: cargo test --workspace
-      - run: cargo run -p cu-profiler-cli -- ci --config cu-profiler.toml
+      - name: Profile and render the Markdown report
+        run: cargo run -p cu-profiler-cli -- ci --config cu-profiler.toml --format markdown --output target/cu-profiler/report.md
+      - name: Post the report as a sticky PR comment
+        # Always run on PRs (even when the budget gate failed above) so the comment
+        # reflects the failure; on push there is no PR and the command no-ops.
+        if: ${{ always() && github.event_name == 'pull_request' }}
+        run: cargo run -p cu-profiler-cli -- comment --input target/cu-profiler/report.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
         with:
           name: cu-profiler-report
           path: target/cu-profiler/

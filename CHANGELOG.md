@@ -6,6 +6,15 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- **`cu-profiler comment`** — post the Markdown report as a *sticky* pull-request
+  comment: one comment per PR, created once and updated in place on every run
+  (identified by a hidden `<!-- cu-profiler-report -->` marker). Reuses the existing
+  `remote`/`ureq` stack (rustls, openssl-free); auth via `$GITHUB_TOKEN`. Supports
+  `--input report.md`, `--pr`, `--repo`, `--marker`, and `--dry-run` (no network).
+  `init --workflow` now scaffolds a render-and-comment step with
+  `permissions: pull-requests: write`.
+
 ## [0.1.2] - 2026-06-20
 
 ### Security
