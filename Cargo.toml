@@ -15,7 +15,7 @@ exclude = [
 ]
 
 [workspace.package]
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 rust-version = "1.85"
 license = "MIT OR Apache-2.0"
@@ -26,9 +26,9 @@ keywords = ["solana", "compute-units", "profiler", "regression", "ci"]
 categories = ["development-tools::profiling", "development-tools::testing"]
 
 [workspace.dependencies]
-cu-profiler-core = { path = "crates/cu-profiler-core", version = "0.2.0" }
-cu-profiler-report = { path = "crates/cu-profiler-report", version = "0.2.0" }
-cu-profiler-instrumentation = { path = "crates/cu-profiler-instrumentation", version = "0.2.0" }
+cu-profiler-core = { path = "crates/cu-profiler-core", version = "0.2.1" }
+cu-profiler-report = { path = "crates/cu-profiler-report", version = "0.2.1" }
+cu-profiler-instrumentation = { path = "crates/cu-profiler-instrumentation", version = "0.2.1" }
 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
