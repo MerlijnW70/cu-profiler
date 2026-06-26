@@ -24,16 +24,23 @@ The v1 spec surface, then taken to **FRONTIER** on the SOTA rubric:
   **or live by `--signature` from an RPC** (rustls, no OpenSSL; `remote` feature)
 - Demo-data guard · property/fuzz harness · published to crates.io (v0.1.1)
 
+### ✅ Shipped (v0.2.x) — the SOTA-scan "Next" list, now closed
+
+- **Multi-sample runs + variance** — `samples` runs N times, reports min/median/variance, and folds variance into the confidence score (spec §12).
+- **PR-comment integration** — `comment` posts the Markdown report as a sticky PR comment.
+- **Turnkey real-CU path** — `cu-profiler bench` validates a plan and delegates the real Mollusk measurement to the Linux `cu-profiler-bench` executor (see [docs/bench.md](docs/bench.md)).
+- **Reusable GitHub Action** — `uses: MerlijnW70/cu-profiler@v1` (composite [`action.yml`](action.yml)); **no peer in the field has one** — a lead, not catch-up.
+- **Hardened test suite** — zero-survivor mutation testing (core + report) plus a dense float-clause property/law sweep; published to crates.io (v0.2.0).
+
 ---
 
 ## 🔜 Next — high value, mostly pure-Rust
 
 | Item | Why | Effort | Kind |
 | --- | --- | --- | --- |
-| **Reusable GitHub Action** (`uses: MerlijnW70/cu-profiler-action@v1`) | One-line CI adoption; **no peer in the field has one** — a lead, not catch-up. | ~1d | pure-Rust (Docker/composite action wrapping the CLI) |
-| **PR-comment integration** | Post the Markdown report as a sticky PR comment (spec §35). The report already renders Markdown; this is the delivery. | ~0.5d | pure-Rust |
-| **Multi-sample runs + variance** | The `Scenario.samples` field exists but is unused. Run N times, report min/median/variance, and fold variance into the confidence score (spec §12). | ~1d | pure-Rust |
-| **Turnkey real-CU CLI path** | Today real CU is library-only via the Mollusk backend; expose a `cargo bench`-style one-command path. The one SOTA soft-spot vs mollusk. | ~2d | Solana-heavy |
+| **`RpcSimulationBackend`** | `simulateTransaction` over RPC (designed, not built; spec §4) — a no-toolchain real-ish CU path. | ~2d | pure-Rust + rustls |
+| **CU flamegraph** | HTML/SVG flamegraph of CU by scope/CPI (spec §35; litesvm ships a flamegraph script). | ~2d | pure-Rust |
+| **Smooth the bench executor install** | The Linux `cu-profiler-bench` install is the one onboarding soft-spot; consider a prebuilt release binary so it's a download, not a build. | ~1d | Solana-heavy |
 
 ---
 
@@ -41,7 +48,6 @@ The v1 spec surface, then taken to **FRONTIER** on the SOTA rubric:
 
 ### Backends (finish the execution matrix)
 - 🧭 **`BanksClientBackend`** — real impl against a test validator (currently a stub). *Solana-heavy.*
-- 🧭 **`RpcSimulationBackend`** — `simulateTransaction` over RPC (designed, not built; spec §4). *pure-Rust + rustls.*
 - 💭 **Mainnet account snapshots** — load real account state into program-test/mollusk for realistic CU (spec §26). *Solana-heavy.*
 
 ### Attribution
@@ -50,7 +56,6 @@ The v1 spec surface, then taken to **FRONTIER** on the SOTA rubric:
 - 💭 **Anchor event parsing + constraint-overhead hints** (spec §23). *pure-Rust.*
 
 ### Reporting & visualization
-- 🧭 **CU flamegraph** — HTML/SVG flamegraph of CU by scope/CPI (spec §35; litesvm ships a flamegraph script). *pure-Rust.*
 - 🧭 **Historical trends** — persist runs and chart CU over time / sparklines (spec §35). *pure-Rust.*
 
 ### Security / audit (spec §26)

@@ -1,0 +1,38 @@
+name: action smoke test
+
+# Verifies the composite `action.yml` works end-to-end: scaffold a demo project
+# with `cu-profiler init`, then drive the gate through the action itself.
+on:
+  push:
+    branches: [main]
+    paths: [action.yml, .github/workflows/action-smoke.yml]
+  pull_request:
+    paths: [action.yml, .github/workflows/action-smoke.yml]
+
+jobs:
+  smoke:
+    name: action drives `cu-profiler ci`
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      # Build the CLI from this checkout and put it on PATH, so the action
+      # exercises *this* revision rather than the last crates.io release.
+      - name: Build cu-profiler from source
+        run: cargo build --release -p cu-profiler-cli
+
+      - name: Put it on PATH
+        run: echo "${{ github.workspace }}/target/release" >> "$GITHUB_PATH"
+
+      - name: Scaffold a demo project
+        run: cu-profiler init
+
+      # Demo logs only warn (never fail), so `ci` exits 0 — a clean smoke signal.
+      - name: Run the action
+        uses: ./
+        with:
+          command: ci
+          args: --config cu-profiler.toml

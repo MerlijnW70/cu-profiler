@@ -23,6 +23,14 @@ use crate::exit::ExitCode;
 /// The Linux-only sibling binary that performs the real Mollusk measurement.
 const EXECUTOR: &str = "cu-profiler-bench";
 
+/// How to obtain the executor. It lives in the detached `cu-profiler-mollusk`
+/// crate (path-deps + the Solana stack), so it is built from a clone rather than
+/// installed from crates.io — these are the exact, verified commands.
+const INSTALL_HINT: &str = "install it on Linux with:\n  \
+     git clone https://github.com/MerlijnW70/cu-profiler\n  \
+     cargo install --path cu-profiler/integration/cu-profiler-mollusk --bin cu-profiler-bench\n  \
+     (see docs/bench.md for the full walkthrough)";
+
 /// Execute the `bench` command.
 pub fn run(args: &BenchArgs, quiet: bool) -> Result<ExitCode> {
     let text = read_to_string_capped(&args.fixtures, MAX_LOG_BYTES)?;
@@ -44,9 +52,8 @@ pub fn run(args: &BenchArgs, quiet: bool) -> Result<ExitCode> {
         Some(code) => Ok(code),
         None => Err(Error::Simulation(format!(
             "plan is valid, but the `{EXECUTOR}` executor was not found on PATH, so no compute \
-             units were measured. It is Linux-only (built from the cu-profiler-mollusk crate, \
-             which links the Solana stack). Install it, then run:\n  \
-             {EXECUTOR} --fixtures {} --program-name {program_name}",
+             units were measured. It is Linux-only (it links the Solana stack); {INSTALL_HINT}\n\
+             then measure with:\n  {EXECUTOR} --fixtures {} --program-name {program_name}",
             args.fixtures.display()
         ))),
     }
@@ -107,7 +114,7 @@ fn summarise(plan: &BenchPlan) {
         );
     }
     eprintln!(
-        "note: plan validated. Pass --program-name and have the `{EXECUTOR}` executor on PATH \
-         (Linux; from the cu-profiler-mollusk crate) to measure real compute units."
+        "note: plan validated. To measure real compute units, pass --program-name with the \
+         `{EXECUTOR}` executor on PATH — {INSTALL_HINT}"
     );
 }

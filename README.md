@@ -104,10 +104,25 @@ defined interfaces and land in a later release — see [docs/architecture.md](do
 
 ## CI
 
+The quickest path is the **reusable GitHub Action** — one line, no toolchain setup
+in your workflow:
+
 ```yaml
-- run: cargo run -p cu-profiler-cli -- ci --config cu-profiler.toml
+- uses: actions/checkout@v4
+- uses: MerlijnW70/cu-profiler@v1
+  with:
+    command: ci
+    args: --config cu-profiler.toml
 - uses: actions/upload-artifact@v4
   with: { name: cu-profiler-report, path: target/cu-profiler/ }
+```
+
+The action installs the published `cu-profiler` CLI and runs the subcommand you
+give it (`command` defaults to `ci`, `args` to `--config cu-profiler.toml`; pin the
+CLI with `version:`). Or call the CLI directly if you already manage Rust in CI:
+
+```yaml
+- run: cargo run -p cu-profiler-cli -- ci --config cu-profiler.toml
 ```
 
 Exit codes are stable and documented in [docs/ci.md](docs/ci.md):
@@ -138,6 +153,7 @@ so via the confidence score rather than inventing precision.
 
 [Reference](docs/reference.md) ·
 [Architecture](docs/architecture.md) ·
+[Real-CU bench](docs/bench.md) ·
 [Scenarios](docs/scenarios.md) ·
 [Baselines](docs/baselines.md) ·
 [CI](docs/ci.md) ·

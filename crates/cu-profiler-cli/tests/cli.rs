@@ -346,6 +346,12 @@ fn bench_with_program_name_errors_clearly_without_executor() {
     let stderr = String::from_utf8_lossy(&out.stderr);
     assert!(stderr.contains("cu-profiler-bench"), "stderr: {stderr}");
     assert!(stderr.contains("not found"), "stderr: {stderr}");
+    // The error must be actionable: name the exact install command, not just the gap.
+    assert!(stderr.contains("cargo install --path"), "stderr: {stderr}");
+    assert!(
+        stderr.contains("integration/cu-profiler-mollusk"),
+        "stderr: {stderr}"
+    );
 }
 
 #[test]

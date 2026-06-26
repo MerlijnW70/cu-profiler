@@ -1,0 +1,51 @@
+name: cu-profiler
+description: >-
+  Profile Solana compute units, enforce CU budgets, and fail CI on a
+  compute-unit regression. Wraps the `cu-profiler` CLI (crates.io).
+author: cu-profiler contributors
+branding:
+  icon: bar-chart-2
+  color: purple
+
+inputs:
+  command:
+    description: 'cu-profiler subcommand to run (e.g. `ci`, `run`, `compare`).'
+    required: false
+    default: ci
+  args:
+    description: 'Extra arguments passed verbatim after the subcommand (e.g. `--config cu-profiler.toml`).'
+    required: false
+    default: '--config cu-profiler.toml'
+  version:
+    description: 'Version of `cu-profiler-cli` to install from crates.io. Leave empty for the latest release.'
+    required: false
+    default: ''
+  working-directory:
+    description: 'Directory to run cu-profiler in.'
+    required: false
+    default: '.'
+
+runs:
+  using: composite
+  steps:
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Cache cargo
+      uses: Swatinem/rust-cache@v2
+
+    - name: Install cu-profiler
+      shell: bash
+      run: |
+        if command -v cu-profiler >/dev/null 2>&1; then
+          echo "cu-profiler already on PATH: $(cu-profiler --version)"
+        elif [ -n "${{ inputs.version }}" ]; then
+          cargo install cu-profiler-cli --version "${{ inputs.version }}" --locked
+        else
+          cargo install cu-profiler-cli --locked
+        fi
+
+    - name: Run cu-profiler
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: cu-profiler ${{ inputs.command }} ${{ inputs.args }}
