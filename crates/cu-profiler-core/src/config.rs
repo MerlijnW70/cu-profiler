@@ -324,4 +324,34 @@ critical = true
         assert_eq!(scenarios.len(), 2);
         assert!(scenarios.iter().any(|s| s.name == "swap_exact_in"));
     }
+
+    #[test]
+    fn non_recorded_mode_is_not_recorded() {
+        let cfg = Config::from_toml(SAMPLE).unwrap(); // mode = "program-test"
+        assert!(!cfg.mode_is_recorded());
+    }
+
+    #[test]
+    fn default_policy_carries_the_defaults() {
+        let cfg = Config::from_toml(SAMPLE).unwrap();
+        let p = cfg.default_policy();
+        assert_eq!(p.warn_at_budget_pct, Some(90.0));
+        assert_eq!(p.max_regression_pct, Some(5.0));
+    }
+
+    #[test]
+    fn per_scenario_warn_overrides_the_default() {
+        // The scenario's 50 must win over the default 90; if the per-scenario warn
+        // field were dropped, this would fall back to 90.
+        let toml = r#"
+[project]
+name = "x"
+[defaults]
+warn_at_budget_pct = 90
+[scenario.foo]
+warn_at_budget_pct = 50
+"#;
+        let cfg = Config::from_toml(toml).unwrap();
+        assert_eq!(cfg.effective_policy("foo").warn_at_budget_pct, Some(50.0));
+    }
 }

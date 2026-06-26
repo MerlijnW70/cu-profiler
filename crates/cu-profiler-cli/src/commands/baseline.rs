@@ -67,3 +67,51 @@ pub fn approve(args: &BaselineApproveArgs, quiet: bool) -> Result<ExitCode> {
         )))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::args::{BaselineSaveArgs, CommonRun};
+
+    #[test]
+    fn save_records_simulated_scenarios_and_skips_unsimulated() {
+        let base = std::env::temp_dir().join(format!("cu-bl-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let logs = base.join(".cu").join("logs");
+        std::fs::create_dir_all(&logs).unwrap();
+        // Two scenarios; only `good` has a log, so `missing` simulates to Unknown
+        // and must NOT be written to the baseline.
+        std::fs::write(
+            base.join("cu-profiler.toml"),
+            "[project]\nname=\"t\"\n[scenario.good]\n[scenario.missing]\n",
+        )
+        .unwrap();
+        std::fs::write(
+            logs.join("good.log"),
+            "Program P invoke [1]\nProgram P consumed 1000 of 200000 compute units\nProgram P success",
+        )
+        .unwrap();
+        let baseline = base.join("baseline.json");
+        let args = BaselineSaveArgs {
+            common: CommonRun {
+                config: base.join("cu-profiler.toml"),
+                logs_dir: logs,
+                scenarios: vec![],
+                tags: vec![],
+                samples: None,
+            },
+            baseline: baseline.clone(),
+        };
+        save(&args, true).expect("baseline save");
+        let store = BaselineStore::load(&baseline).unwrap();
+        let _ = std::fs::remove_dir_all(&base);
+        assert!(
+            store.get("good").is_some(),
+            "simulated scenario must be recorded"
+        );
+        assert!(
+            store.get("missing").is_none(),
+            "unsimulated (Unknown) scenario must be skipped"
+        );
+    }
+}

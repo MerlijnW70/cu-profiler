@@ -1,6 +1,6 @@
 //! `cu-profiler bench` — turnkey real-CU path.
 //!
-//! `bench` validates a declarative [`BenchPlan`](cu_profiler_core::bench::BenchPlan),
+//! `bench` validates a declarative [`BenchPlan`],
 //! optionally builds the program with `cargo build-sbf`, then **delegates the real
 //! Mollusk measurement** to the Linux-only `cu-profiler-bench` executor, found over
 //! `PATH` (a runtime sibling, never a build dependency — so the main CLI keeps the

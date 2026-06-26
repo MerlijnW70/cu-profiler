@@ -142,4 +142,32 @@ mod tests {
         );
         assert!(row.contains("evil\\|name'"), "name not sanitised: {row}");
     }
+
+    #[test]
+    fn renders_diagnostics_section_and_status_emoji() {
+        let mut backend = RecordedLogsBackend::new();
+        backend.insert_blob(
+            "swap",
+            "Program User111 invoke [1]\n\
+             Program log: CU_PROFILER_BEGIN name=validate cu=200000\n\
+             Program log: CU_PROFILER_END name=validate cu=188000\n\
+             Program User111 consumed 96000 of 100000 compute units\n\
+             Program User111 success",
+            true,
+        );
+        let mut scenario = Scenario::new("swap");
+        scenario.budget = cu_profiler_core::budget::BudgetPolicy {
+            absolute_max_cu: Some(100_000),
+            warn_at_budget_pct: Some(90.0),
+            ..Default::default()
+        };
+        let report =
+            Profiler::new().run(&backend, &[scenario], None, RunMetadata::recorded("0.1.0"));
+        let md = render(&report);
+        assert!(
+            md.contains("### Diagnostics"),
+            "diagnostics section missing: {md}"
+        );
+        assert!(md.contains('🟡'), "warn status emoji missing: {md}");
+    }
 }

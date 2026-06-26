@@ -359,4 +359,39 @@ mod tests {
         assert_eq!(find_in_page(&comments, "cu-profiler-report"), Some(2));
         assert_eq!(find_in_page(&comments, "other-marker"), None);
     }
+
+    fn comment_args() -> CommentArgs {
+        use crate::args::CommonRun;
+        CommentArgs {
+            common: CommonRun {
+                config: "cu-profiler.toml".into(),
+                logs_dir: ".cu/logs".into(),
+                scenarios: vec![],
+                tags: vec![],
+                samples: None,
+            },
+            input: None,
+            pr: None,
+            repo: None,
+            marker: "cu-profiler-report".into(),
+            dry_run: false,
+        }
+    }
+
+    #[test]
+    fn resolve_repo_uses_the_explicit_slug() {
+        let mut args = comment_args();
+        args.repo = Some("my-org/my-repo".into());
+        assert_eq!(
+            resolve_repo(&args).unwrap(),
+            ("my-org".to_string(), "my-repo".to_string())
+        );
+    }
+
+    #[test]
+    fn resolve_pr_prefers_the_explicit_flag() {
+        let mut args = comment_args();
+        args.pr = Some(42);
+        assert_eq!(resolve_pr(&args), Some(42));
+    }
 }

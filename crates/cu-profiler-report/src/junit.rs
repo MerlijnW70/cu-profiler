@@ -106,4 +106,32 @@ mod tests {
     fn escapes_special_characters() {
         assert_eq!(escape("a<b>&\"'"), "a&lt;b&gt;&amp;&quot;&apos;");
     }
+
+    #[test]
+    fn failure_case_carries_message_and_detail() {
+        let mut backend = RecordedLogsBackend::new();
+        backend.insert_blob(
+            "swap",
+            "Program P invoke [1]\nProgram P consumed 120000 of 200000 compute units\nProgram P success",
+            true,
+        );
+        let mut scenario = Scenario::new("swap");
+        scenario.budget = BudgetPolicy {
+            absolute_max_cu: Some(100_000),
+            ..Default::default()
+        };
+        let report =
+            Profiler::new().run(&backend, &[scenario], None, RunMetadata::recorded("0.1.0"));
+        let xml = render(&report);
+        // failure_message is the failing policy's message; detail carries status + CU.
+        assert!(
+            xml.contains("absolute maximum"),
+            "policy message missing: {xml}"
+        );
+        assert!(xml.contains("status=FAIL"), "detail status missing: {xml}");
+        assert!(
+            xml.contains("total_cu=120000"),
+            "detail total_cu missing: {xml}"
+        );
+    }
 }
