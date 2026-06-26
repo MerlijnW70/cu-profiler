@@ -1,24 +1,27 @@
 {
-  "date": "2026-06-20",
+  "date": "2026-06-26",
   "mode": "standard",
   "domains": ["solana-compute-unit-regression"],
   "rubric_version": 1,
   "cluster": "solana-compute-unit-measurement-and-regression",
   "field": [
-    { "repo": "anza-xyz/mollusk", "stars": 295, "pushed": "2026-06-16", "type": "niche-relevant", "cluster": "direct" },
-    { "repo": "LiteSVM/litesvm", "stars": 610, "pushed": "2026-06-19", "type": "popular", "cluster": "direct" },
-    { "repo": "kevinheavey/solana-bankrun", "stars": 166, "pushed": "2025-03-22", "type": "niche-relevant", "cluster": "direct" },
-    { "repo": "foundry-rs/foundry", "stars": 10441, "pushed": "2026-06-19", "type": "canonical", "cluster": "cross-cluster-evm" },
-    { "repo": "cgewecke/hardhat-gas-reporter", "stars": 430, "pushed": "2026-02-09", "type": "popular", "cluster": "cross-cluster-evm" }
+    { "repo": "anza-xyz/mollusk", "stars": 295, "pushed": "2026-06-24", "type": "canonical", "cluster": "direct", "note": "mollusk-svm-bencher writes a markdown CU table with an informational Delta column + matrix baseline compare; no threshold CI gate, no CPI/scope attribution" },
+    { "repo": "LiteSVM/litesvm", "stars": 612, "pushed": "2026-06-22", "type": "popular", "cluster": "direct", "note": "exposes raw compute_units_consumed; no baseline/gate/report/attribution" },
+    { "repo": "solana-foundation/surfpool", "stars": 572, "pushed": "2026-06-26", "type": "technically-advanced", "cluster": "direct", "note": "local surfnet sim profiles tx CU + CPI tree for inspection; no regression/budget CI gate — new entrant since last scan" },
+    { "repo": "kevinheavey/solana-bankrun", "stars": 165, "pushed": "2025-03-22", "type": "stale-reference", "cluster": "direct", "note": "DEPRECATED -> use LiteSVM; reclassified niche-relevant -> stale-reference" },
+    { "repo": "solana-foundation/anchor", "stars": null, "pushed": "2026-06-26", "type": "popular", "cluster": "direct", "note": "internal bench/COMPUTE_UNITS.md autogenerates per-instruction CU tables across versions; internal to Anchor, not a reusable gate" },
+    { "repo": "foundry-rs/foundry", "stars": 10441, "pushed": "2026-06-24", "type": "canonical", "cluster": "cross-cluster-evm", "note": "forge snapshot -> .gas-snapshot + --check + --tolerance %; the mature analog pattern" },
+    { "repo": "Rubilmax/foundry-gas-diff", "stars": null, "pushed": "2026-06-01", "type": "popular", "cluster": "cross-cluster-evm", "note": "GitHub Action posting a sticky PR comment with the gas diff" },
+    { "repo": "cgewecke/hardhat-gas-reporter", "stars": 430, "pushed": "2026-02-09", "type": "popular", "cluster": "cross-cluster-evm", "note": "per-method gas table; no CI-fail threshold" }
   ],
   "matrix": [
-    { "id": "real-cu-measurement", "us": "met", "tier": "table-stakes" },
+    { "id": "real-cu-measurement", "us": "met", "tier": "table-stakes", "note": "real CU via Mollusk backend + `cu-profiler bench` -> Linux-only cu-profiler-bench executor; turnkey path exists but executor install is an onboarding step" },
     { "id": "baseline-delta", "us": "met", "tier": "table-stakes" },
-    { "id": "ci-regression-gate", "us": "met", "tier": "table-stakes" },
+    { "id": "ci-regression-gate", "us": "met", "tier": "table-stakes", "note": "unique in the field — no peer fails CI on a CU threshold" },
     { "id": "markdown-report", "us": "met", "tier": "table-stakes" },
-    { "id": "registry-published", "us": "met", "tier": "table-stakes" },
+    { "id": "registry-published", "us": "met", "tier": "table-stakes", "note": "all 4 crates on crates.io at v0.2.0" },
     { "id": "real-program-example", "us": "met", "tier": "table-stakes" },
-    { "id": "tagged-releases", "us": "met", "tier": "table-stakes" },
+    { "id": "tagged-releases", "us": "met", "tier": "table-stakes", "note": "tag v0.2.0" },
     { "id": "per-unit-attribution", "us": "met", "tier": "table-stakes" },
     { "id": "multi-format-ci-output", "us": "met", "tier": "edge" },
     { "id": "cpi-call-tree-attribution", "us": "met", "tier": "edge" }
@@ -29,7 +32,8 @@
   "history": [
     { "date": "2026-06-19", "coverage_pct": 50, "tier": "BEHIND", "gaps_total": 4 },
     { "date": "2026-06-20", "coverage_pct": 88, "tier": "COMPETITIVE", "gaps_total": 1 },
-    { "date": "2026-06-20", "coverage_pct": 100, "tier": "FRONTIER", "gaps_total": 0 }
+    { "date": "2026-06-20", "coverage_pct": 100, "tier": "FRONTIER", "gaps_total": 0 },
+    { "date": "2026-06-26", "coverage_pct": 100, "tier": "FRONTIER", "gaps_total": 0 }
   ],
-  "note": "All four crates published to crates.io (owner MerlijnW70, v0.1.0) — gap #2 closed. Every table-stakes capability met; exceeds the field on reporting/attribution breadth."
+  "note": "Re-scan held FRONTIER, 0 table-stakes gaps. Field saturated (~14 query angles) — still NO direct competitor: nothing else's primary job is Solana CU regression/budget GATING in CI. Strongest peer mollusk added an informational CU-delta bencher (no threshold gate, no attribution). bankrun deprecated -> stale-reference; surfpool is a new profiler entrant (CU+CPI inspection, no gate). Maturity strengthened vs last scan: v0.1->v0.2 publish, PR-comment integration, multi-sample variance->confidence, turnkey `bench` command, and a mutation+property test-hardening pass (zero surviving mutants in core/report; dense float-clause law sweep). Remaining upside is onboarding/optional, not table-stakes: ship the reusable GitHub Action (ROADMAP, no peer has one), smooth the Linux-executor turnkey friction, and optionally borrow EVM ideas (committed/diffable snapshot file, percentage --tolerance gate, distributional Min/Avg/Median/Max report)."
 }
