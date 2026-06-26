@@ -129,4 +129,66 @@ mod tests {
         assert!(text.contains("Confidence:"));
         assert!(text.contains("near_budget_limit") || text.contains("near its compute budget"));
     }
+
+    #[test]
+    fn explain_text_quantifies_a_scope_with_a_cu_snapshot() {
+        // A scope carrying both a CU estimate and a percentage must render the
+        // quantified line ("… CU (…%, …)"), not the "CU unknown" fallback.
+        let mut backend = RecordedLogsBackend::new();
+        backend.insert_blob(
+            "swap",
+            "Program User111 invoke [1]\n\
+             Program log: CU_PROFILER_BEGIN name=validate cu=200000\n\
+             Program log: CU_PROFILER_END name=validate cu=188000\n\
+             Program User111 consumed 96000 of 100000 compute units\n\
+             Program User111 success",
+            true,
+        );
+        let report = Profiler::new().run(
+            &backend,
+            &[Scenario::new("swap")],
+            None,
+            RunMetadata::recorded("0.1.0"),
+        );
+        let text = explain_text(&report.scenarios[0]);
+        assert!(text.contains("CU ("), "scope CU/percentage missing: {text}");
+        assert!(!text.contains("validate (parent: -) — CU unknown"));
+    }
+
+    #[test]
+    fn run_finds_and_explains_the_requested_scenario() {
+        // Drives `run()` end-to-end so the `s.name == args.scenario` lookup is
+        // exercised: the narrowed run profiles only the requested scenario, so an
+        // `==`→`!=` flip finds nothing and returns an error instead of Success.
+        use crate::args::CommonRun;
+
+        let base = std::env::temp_dir().join(format!("cu-explain-run-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let logs = base.join(".cu").join("logs");
+        std::fs::create_dir_all(&logs).unwrap();
+        // Two scenarios so the lookup must select by name, not by position.
+        std::fs::write(
+            base.join("cu-profiler.toml"),
+            "[project]\nname=\"t\"\n[scenario.a]\n[scenario.b]\n",
+        )
+        .unwrap();
+        std::fs::write(
+            logs.join("b.log"),
+            "Program P invoke [1]\nProgram P consumed 1000 of 200000 compute units\nProgram P success",
+        )
+        .unwrap();
+        let args = ExplainArgs {
+            scenario: "b".into(),
+            common: CommonRun {
+                config: base.join("cu-profiler.toml"),
+                logs_dir: logs,
+                scenarios: vec![],
+                tags: vec![],
+                samples: None,
+            },
+        };
+        let code = run(&args, true);
+        let _ = std::fs::remove_dir_all(&base);
+        assert_eq!(code.unwrap(), ExitCode::Success);
+    }
 }

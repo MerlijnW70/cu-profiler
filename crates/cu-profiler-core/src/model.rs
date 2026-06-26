@@ -354,4 +354,31 @@ mod tests {
         assert_eq!(r.summary.total_cu, 600);
         assert!(r.has_failures());
     }
+
+    #[test]
+    fn status_labels_are_stable() {
+        assert_eq!(Status::Pass.label(), "PASS");
+        assert_eq!(Status::Warn.label(), "WARN");
+        assert_eq!(Status::Fail.label(), "FAIL");
+        assert_eq!(Status::Unknown.label(), "UNKNOWN");
+    }
+
+    #[test]
+    fn two_samples_compute_even_median() {
+        // Exactly two samples must produce stats (the `len < 2` boundary), and an
+        // even count medians the middle pair rather than an endpoint.
+        let s = SampleStats::from_samples(&[10, 20]).expect("two samples compute");
+        assert_eq!(s.count, 2);
+        assert_eq!(s.median, 15); // (10 + 20) / 2
+    }
+
+    #[test]
+    fn report_without_failures_is_clean() {
+        let r = Report::new(
+            vec![scenario("ok", Status::Pass, 100)],
+            RunMetadata::recorded("0.1.0"),
+        );
+        assert_eq!(r.summary.failed, 0);
+        assert!(!r.has_failures());
+    }
 }

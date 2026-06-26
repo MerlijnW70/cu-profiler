@@ -390,4 +390,69 @@ mod tests {
         assert!(!a.simulation_success);
         assert_eq!(a.total_cu, 8000);
     }
+
+    #[test]
+    fn cpi_nesting_at_the_limit_does_not_warn() {
+        // `build` seeds a synthetic root, so N nested invokes give structural depth
+        // N+1. MAX_DEPTH-1 invokes → depth exactly MAX_DEPTH → no flattening warning.
+        let raw: Vec<String> = (1..=cpi_tree::MAX_DEPTH - 1)
+            .map(|d| format!("Program User111 invoke [{d}]"))
+            .collect();
+        let a = analyze(&raw, &ProgramRegistry::with_builtins());
+        assert!(
+            !a.warnings.iter().any(|w| w.contains("nesting exceeded")),
+            "did not expect a flattening warning at the limit: {:?}",
+            a.warnings
+        );
+    }
+
+    #[test]
+    fn excessive_cpi_nesting_emits_a_flattening_warning() {
+        // Beyond MAX_DEPTH the tree is flattened and analyze() warns. Exercises
+        // structural_depth and the depth guard at the over-limit boundary.
+        let raw: Vec<String> = (1..=cpi_tree::MAX_DEPTH + 3)
+            .map(|d| format!("Program User111 invoke [{d}]"))
+            .collect();
+        let a = analyze(&raw, &ProgramRegistry::with_builtins());
+        assert!(
+            a.warnings.iter().any(|w| w.contains("nesting exceeded")),
+            "expected a flattening warning beyond the limit: {:?}",
+            a.warnings
+        );
+    }
+
+    #[test]
+    fn scope_point_marker_is_counted() {
+        let logs = lines(&[
+            "Program User111 invoke [1]",
+            "Program log: CU_PROFILER_POINT name=checkpoint",
+            "Program User111 consumed 1000 of 200000 compute units",
+            "Program User111 success",
+        ]);
+        let a = analyze(&logs, &ProgramRegistry::with_builtins());
+        assert_eq!(a.scope_marker_count, 1);
+    }
+
+    #[test]
+    fn zero_total_with_zero_delta_scope_withholds_percentage_without_warning() {
+        // total_cu == 0 and a zero-CU scope delta: the percentage is withheld and no
+        // "exceeds the measured total" warning is emitted (guards the `total_cu > 0`
+        // and `units > total_cu` boundaries against div-by-zero / spurious warnings).
+        let logs = lines(&[
+            "Program User111 invoke [1]",
+            "Program log: CU_PROFILER_BEGIN name=noop cu=100",
+            "Program log: CU_PROFILER_END name=noop cu=100",
+            "Program User111 consumed 0 of 200000 compute units",
+            "Program User111 success",
+        ]);
+        let a = analyze(&logs, &ProgramRegistry::with_builtins());
+        assert_eq!(a.total_cu, 0);
+        assert_eq!(a.scopes[0].units_estimated, Some(0));
+        assert_eq!(a.scopes[0].percentage_of_total, None);
+        assert!(
+            !a.warnings
+                .iter()
+                .any(|w| w.contains("exceeds the measured total"))
+        );
+    }
 }

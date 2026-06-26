@@ -229,4 +229,59 @@ mod tests {
         assert!(!html.contains("<script>evil"));
         assert!(html.contains("&lt;script&gt;evil&lt;/script&gt;"));
     }
+
+    /// A report that exercises every conditional section: a near-budget Warn (→
+    /// diagnostic + confidence reasons) plus a scope with a CU-snapshot delta.
+    fn rich_report() -> Report {
+        let mut backend = RecordedLogsBackend::new();
+        backend.insert_blob(
+            "swap",
+            "Program User111 invoke [1]\n\
+             Program log: CU_PROFILER_BEGIN name=validate cu=200000\n\
+             Program log: CU_PROFILER_END name=validate cu=188000\n\
+             Program User111 consumed 96000 of 100000 compute units\n\
+             Program User111 success",
+            true,
+        );
+        let mut scenario = Scenario::new("swap");
+        scenario.budget = BudgetPolicy {
+            absolute_max_cu: Some(100_000),
+            warn_at_budget_pct: Some(90.0),
+            ..Default::default()
+        };
+        Profiler::new().run(&backend, &[scenario], None, RunMetadata::recorded("0.1.0"))
+    }
+
+    #[test]
+    fn renders_every_section_and_status_class() {
+        let html = render(&rich_report());
+        assert!(
+            html.contains("class=\"overview\""),
+            "overview table missing"
+        );
+        assert!(
+            html.contains("<th>Scenario</th>"),
+            "overview header missing"
+        );
+        // `class="warn">WARN` is produced only by status_class + the status label;
+        // a bare `class="warn"` also appears hardcoded in the summary line, so assert
+        // the status-specific form to actually pin status_class.
+        assert!(
+            html.contains("class=\"warn\">WARN"),
+            "status_class output missing"
+        );
+        assert!(
+            html.contains("<ul class=\"reasons\">"),
+            "confidence reasons missing"
+        );
+        assert!(html.contains("<h3>Scopes</h3>"), "scopes section missing");
+        assert!(
+            html.contains("CU (") && html.contains("%)"),
+            "scope CU/percentage missing"
+        );
+        assert!(
+            html.contains("<h3>Diagnostics</h3>"),
+            "diagnostics section missing"
+        );
+    }
 }

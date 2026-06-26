@@ -1,6 +1,10 @@
 # Rust build artifacts
 /target
 
+# cargo-mutants output
+/mutants.out/
+/mutants.out.old/
+
 # Editor / OS noise
 *.rs.bk
 *.swp

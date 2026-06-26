@@ -280,4 +280,40 @@ mod tests {
         let err = logs_from_response(&v, "SIG", "rpc").unwrap_err();
         assert!(err.to_string().contains("Invalid param"));
     }
+
+    #[cfg(feature = "remote")]
+    #[test]
+    fn max_rpc_bytes_is_thirty_two_mib() {
+        assert_eq!(MAX_RPC_BYTES, 33_554_432); // 32 * 1024 * 1024
+    }
+
+    #[test]
+    fn import_from_file_writes_log_into_a_nested_logs_dir() {
+        use crate::args::ImportArgs;
+        let base = std::env::temp_dir().join(format!("cu-import-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        std::fs::create_dir_all(&base).unwrap();
+        let json = base.join("tx.json");
+        std::fs::write(
+            &json,
+            r#"{"result":{"meta":{"logMessages":["Program P invoke [1]","Program P success"]}}}"#,
+        )
+        .unwrap();
+        // logs_dir has a parent component that does not exist yet → exercises the
+        // create_dir_all branch.
+        let logs_dir = base.join("nested").join("logs");
+        let args = ImportArgs {
+            file: Some(json),
+            signature: None,
+            rpc: "unused".into(),
+            commitment: "confirmed".into(),
+            name: Some("mytx".into()),
+            logs_dir: logs_dir.clone(),
+        };
+        let code = run(&args, true).expect("import from file");
+        assert_eq!(code, ExitCode::Success);
+        let written = std::fs::read_to_string(logs_dir.join("mytx.log")).unwrap();
+        assert!(written.contains("Program P invoke [1]"));
+        let _ = std::fs::remove_dir_all(&base);
+    }
 }

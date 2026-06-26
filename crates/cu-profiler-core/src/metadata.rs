@@ -76,3 +76,25 @@ impl RunMetadata {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn backend_kind_as_str_is_stable() {
+        assert_eq!(BackendKind::Recorded.as_str(), "recorded");
+        assert_eq!(BackendKind::ProgramTest.as_str(), "program-test");
+        assert_eq!(BackendKind::BanksClient.as_str(), "banks-client");
+        assert_eq!(BackendKind::Mollusk.as_str(), "mollusk");
+        assert_eq!(BackendKind::RpcSimulation.as_str(), "rpc-simulation");
+    }
+
+    #[test]
+    fn recorded_metadata_uses_the_recorded_backend() {
+        let m = RunMetadata::recorded("1.2.3");
+        assert_eq!(m.backend, BackendKind::Recorded);
+        assert_eq!(m.instrumentation, InstrumentationMode::Off);
+        assert_eq!(m.profiler_version, "1.2.3");
+    }
+}

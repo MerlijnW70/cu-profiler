@@ -226,4 +226,54 @@ mod tests {
         assert!(ConfidenceLevel::High > ConfidenceLevel::Low);
         assert!(ConfidenceLevel::Medium > ConfidenceLevel::Unknown);
     }
+
+    #[test]
+    fn level_labels_are_stable() {
+        assert_eq!(ConfidenceLevel::High.label(), "High");
+        assert_eq!(ConfidenceLevel::Medium.label(), "Medium");
+        assert_eq!(ConfidenceLevel::Low.label(), "Low");
+        assert_eq!(ConfidenceLevel::Unknown.label(), "Unknown");
+    }
+
+    #[test]
+    fn parser_warnings_demote_to_medium_with_reason() {
+        let f = ConfidenceFactors {
+            parser_warnings: 1,
+            metadata_available: true,
+            ..Default::default()
+        };
+        let c = score(&f);
+        assert_eq!(c.level, ConfidenceLevel::Medium);
+        assert!(c.reasons.iter().any(|r| r.contains("1 parser warning")));
+    }
+
+    #[test]
+    fn scope_markers_add_a_reason_when_present() {
+        let f = ConfidenceFactors {
+            scope_markers: 2,
+            metadata_available: true,
+            ..Default::default()
+        };
+        assert!(
+            score(&f)
+                .reasons
+                .iter()
+                .any(|r| r.contains("2 scope markers detected"))
+        );
+    }
+
+    #[test]
+    fn no_scope_markers_adds_no_marker_reason() {
+        let f = ConfidenceFactors {
+            scope_markers: 0,
+            metadata_available: true,
+            ..Default::default()
+        };
+        assert!(
+            !score(&f)
+                .reasons
+                .iter()
+                .any(|r| r.contains("scope markers detected"))
+        );
+    }
 }

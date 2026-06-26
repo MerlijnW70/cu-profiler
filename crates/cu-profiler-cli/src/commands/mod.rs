@@ -325,8 +325,47 @@ mod tests {
         let path = std::env::temp_dir().join(format!("cu-cap-{}.txt", std::process::id()));
         std::fs::write(&path, b"0123456789").unwrap();
         assert!(read_to_string_capped(&path, 100).is_ok());
+        // Boundary: a file exactly at the limit is allowed (`len > max`, not `>=`).
+        assert!(
+            read_to_string_capped(&path, 10).is_ok(),
+            "a file exactly at the cap must be allowed"
+        );
         let err = read_to_string_capped(&path, 4).unwrap_err();
         assert!(err.to_string().contains("limit"), "{err}");
         let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn max_log_bytes_is_sixty_four_mib() {
+        assert_eq!(MAX_LOG_BYTES, 67_108_864);
+    }
+
+    #[test]
+    fn build_registry_includes_builtins_and_config_labels() {
+        let config = Config::from_toml(
+            "[project]\nname = \"x\"\n[program_labels]\n\
+             \"MyProg111111111111111111111111111111111111\" = \"My Program\"\n",
+        )
+        .unwrap();
+        let reg = build_registry(&config);
+        assert_eq!(
+            reg.label("MyProg111111111111111111111111111111111111"),
+            Some("My Program"),
+            "config label missing (registry was empty?)"
+        );
+        assert!(
+            reg.label("11111111111111111111111111111111").is_some(),
+            "builtins missing (registry was Default-empty?)"
+        );
+    }
+
+    #[test]
+    fn emit_creates_missing_parent_directories() {
+        let dir = std::env::temp_dir().join(format!("cu-emit-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let path = dir.join("nested").join("report.txt");
+        emit("hello", Some(&path), true).expect("emit should create parents and write");
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), "hello");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

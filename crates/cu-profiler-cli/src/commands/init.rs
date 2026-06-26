@@ -201,3 +201,37 @@ fn write_file(path: &Path, contents: &str, force: bool, quiet: bool) -> Result<(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn write_file_respects_the_force_flag() {
+        let dir = std::env::temp_dir().join(format!("cu-init-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("keep.txt");
+        std::fs::write(&path, "original").unwrap();
+
+        // force = false must NOT overwrite an existing file.
+        write_file(&path, "replacement", false, true).unwrap();
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), "original");
+
+        // force = true overwrites it.
+        write_file(&path, "replacement", true, true).unwrap();
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), "replacement");
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn write_file_creates_missing_parents() {
+        let dir = std::env::temp_dir().join(format!("cu-init-p-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let path = dir.join("a").join("b").join("new.txt");
+        write_file(&path, "hi", false, true).unwrap();
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), "hi");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+}

@@ -54,4 +54,48 @@ mod tests {
         assert_eq!(thousands(1_000_000), "1,000,000");
         assert_eq!(thousands(999), "999");
     }
+
+    #[test]
+    fn scenario_delta_pct_reads_the_baseline_comparison() {
+        use cu_profiler_core::Profiler;
+        use cu_profiler_core::backend::RecordedLogsBackend;
+        use cu_profiler_core::baseline::{BaselineRecord, BaselineStore, Fingerprint};
+        use cu_profiler_core::confidence::ConfidenceLevel;
+        use cu_profiler_core::metadata::{InstrumentationMode, RunMetadata};
+        use cu_profiler_core::scenario::Scenario;
+
+        let mut backend = RecordedLogsBackend::new();
+        backend.insert_blob(
+            "swap",
+            "Program P invoke [1]\nProgram P consumed 1000 of 200000 compute units\nProgram P success",
+            true,
+        );
+        let mut store = BaselineStore::new();
+        store.insert(BaselineRecord {
+            scenario: "swap".into(),
+            actual_units: 800,
+            budget: None,
+            timestamp: None,
+            git_commit: None,
+            fingerprint: Fingerprint::new("swap", "fix", "cfg", None),
+            solana_versions: Vec::new(),
+            profiler_version: "0.1.0".into(),
+            instrumentation: InstrumentationMode::Off,
+            confidence: ConfidenceLevel::High,
+            approved: false,
+        });
+        let report = Profiler::new().run(
+            &backend,
+            &[Scenario::new("swap")],
+            Some(&store),
+            RunMetadata::recorded("0.1.0"),
+        );
+        // 1000 measured vs 800 baseline → +25%.
+        let delta = scenario_delta_pct(&report.scenarios[0]);
+        assert!(
+            delta.is_some(),
+            "delta should be present when a baseline matched"
+        );
+        assert!((delta.unwrap() - 25.0).abs() < 0.01, "delta = {delta:?}");
+    }
 }

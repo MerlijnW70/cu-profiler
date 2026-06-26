@@ -171,4 +171,45 @@ mod tests {
         let back = BaselineStore::from_json(&json).unwrap();
         assert_eq!(store, back);
     }
+
+    #[test]
+    fn new_store_is_at_schema_version_one() {
+        assert_eq!(BaselineStore::new().version, 1);
+    }
+
+    #[cfg(feature = "json")]
+    #[test]
+    fn save_then_load_round_trips_through_disk() {
+        let mut store = BaselineStore::new();
+        store.insert(record("swap", 4242));
+        let path = std::env::temp_dir().join("cu_profiler_baseline_roundtrip_test.json");
+        let _ = std::fs::remove_file(&path);
+        store.save(&path).expect("save");
+        let loaded = BaselineStore::load(&path).expect("load");
+        assert_eq!(loaded.get("swap").map(|r| r.actual_units), Some(4242));
+        assert_eq!(loaded, store);
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[cfg(feature = "json")]
+    #[test]
+    fn load_missing_file_returns_an_empty_store() {
+        let path = std::env::temp_dir().join("cu_profiler_baseline_definitely_absent_xyzzy.json");
+        let _ = std::fs::remove_file(&path);
+        let store = BaselineStore::load(&path).expect("a missing baseline is not an error");
+        assert!(store.records.is_empty());
+    }
+
+    #[cfg(feature = "json")]
+    #[test]
+    fn load_propagates_non_notfound_errors() {
+        // A file that exists but is not valid UTF-8 yields an InvalidData (non-
+        // NotFound) read error, which must propagate rather than be swallowed as an
+        // empty store.
+        let path = std::env::temp_dir().join("cu_profiler_baseline_invalid_utf8.json");
+        std::fs::write(&path, [0xff, 0xfe, 0xff]).expect("write bytes");
+        let result = BaselineStore::load(&path);
+        let _ = std::fs::remove_file(&path);
+        assert!(result.is_err());
+    }
 }
